@@ -1,11 +1,9 @@
 #include "tcpserver.h"
 #include <iostream>
-#include "devicemanager.h"
 
 Server::Server(boost::asio::io_context &io_context, int port)
     : acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)) {
     acceptConnections();
-    deviceManager = DeviceManager::Instance();
 }
 
 void Server::acceptConnections() {
@@ -15,8 +13,6 @@ void Server::acceptConnections() {
             tcp_connections_.push_back(connection);
             std::vector<std::string> topics;
             topics.push_back("all");
-            //default conenction type is standard but user can change it
-            deviceManager->addConnection(connection, topics, true);
             std::cout << "Connected to server (Server): " << connection->description() << std::endl;
             acceptConnections(); // Continue to accept new connections
         } else {

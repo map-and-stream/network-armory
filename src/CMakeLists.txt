@@ -2,11 +2,10 @@ set(LIBRARY_NAME network_armory)
 
 file(GLOB_RECURSE CONFIGURE_DEPENDS NETWORK_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
 set(NETWORK_SOURCES
-    devicemanager.cpp 
-    serialconnection.cpp 
-    tcpconnection.cpp 
-    tcpserver.cpp 
-    udpconnection.cpp 
+    boost/serialconnection.cpp 
+    boost/tcpconnection.cpp 
+    boost/tcpserver.cpp 
+    boost/udpconnection.cpp 
 )
 
 # Find Boost and Asio

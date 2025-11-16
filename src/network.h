@@ -1,25 +1,26 @@
 #pragma once
 
-#include <iostream>
+#include <cstdint>
+#include <functional>
 #include <string>
+#include <vector>
 
-enum class NetworkLevel { info, warn, error };
+enum class ConnectionType { TCP, UDP, Serial };
+enum class BackendType { BoostAsio, StdNet };
 
-enum class NetworkType { standard, booost };
-enum class SinkType { Basic, Daily, Hourly };
-struct NetworkConfig {
-    std::string fileName;  // Log file name                   // How many rotated files to keep (for
-                           // rotating_file_sink)
-};
-
-// --- Abstract Logger Interface ---
 class INetwork {
   public:
+    using ReceiveCallback = std::function<void(const std::vector<uint8_t>& data)>;
     virtual ~INetwork() = default;
-    INetwork(NetworkConfig cfg) {}
 
-    virtual void info(const std::string& message) = 0;
+    virtual void send(const std::vector<uint8_t>& data) = 0;
 
-  protected:
-    NetworkConfig currentLog;
+    virtual void asyncRead(ReceiveCallback cb) = 0;
+
+    virtual bool isConnected() const = 0;
+
+    virtual ConnectionType type() const = 0;
+    virtual BackendType backend() const = 0;
+
+    virtual std::string description() const = 0;
 };
