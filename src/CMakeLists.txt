@@ -2,6 +2,7 @@ set(LIBRARY_NAME network_armory)
 
 file(GLOB_RECURSE CONFIGURE_DEPENDS NETWORK_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
 set(NETWORK_SOURCES
+    boost/boost_network.cpp
     boost/serialconnection.cpp 
     boost/tcpconnection.cpp 
     boost/tcpserver.cpp 
@@ -10,6 +11,9 @@ set(NETWORK_SOURCES
 
 # Find Boost and Asio
 find_package(Boost REQUIRED COMPONENTS system)
+if(Boost_FOUND)
+    message(STATUS "Using Boost version: ${Boost_VERSION}")
+endif()
 find_package(Threads REQUIRED)
 
 add_library(${LIBRARY_NAME} STATIC 

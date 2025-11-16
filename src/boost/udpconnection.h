@@ -1,31 +1,49 @@
-// UDPConnection.h
-#ifndef UDPCONNECTION_H
-#define UDPCONNECTION_H
+#ifndef BOOST_UDP_CONNECTION_H
+#define BOOST_UDP_CONNECTION_H
 
-#include "connection.h"
 #include <boost/asio.hpp>
-#include <iostream>
 #include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
-class UDPConnection : public std::enable_shared_from_this<UDPConnection> , public Connection {
-public:
+#include "network.h"
+
+class UDPConnection : public INetwork, public std::enable_shared_from_this<UDPConnection> {
+  public:
     using Ptr = std::shared_ptr<UDPConnection>;
-    static Ptr create(boost::asio::io_context& io_context, const std::string& host, unsigned short port) {
-        return Ptr(new UDPConnection(io_context, host, port));
-    }
 
-    UDPConnection(boost::asio::io_context& io_context, const std::string& host, int port);
+    static Ptr create(boost::asio::io_context& io_context, const std::string& host,
+                      unsigned short port);
+
+    UDPConnection(boost::asio::io_context& io_context, const std::string& host,
+                  unsigned short port);
+
     ~UDPConnection() override;
-    void send(const std::string& message, const std::string& topic = "all") override;
-    void asyncRead(std::function<void(const std::string&, const std::string&)> callback) override; // New: async receive method
+
+    void send(const std::vector<uint8_t>& data) override;
+
+    void asyncRead(ReceiveCallback cb) override;
+
     bool isConnected() const override;
-    DeviceType type() const override{ return DeviceType::udp;}
+
+    ConnectionType type() const override { return ConnectionType::UDP; }
+
+    BackendType backend() const override { return BackendType::BoostAsio; }
+
     std::string description() const override;
 
-private:
+  private:
+    void connect(const std::string& host, unsigned short port);
+
+    // Optionally, you could define a handleRead like in TCPConnection
     void handleRead(const boost::system::error_code& error, std::size_t bytes_transferred);
-    boost::asio::ip::udp::endpoint remote_endpoint_;
+
+    boost::asio::io_context& io_context_;
     boost::asio::ip::udp::socket socket_;
+    boost::asio::ip::udp::endpoint remote_endpoint_;
+    std::vector<uint8_t> read_buffer_;
+    ReceiveCallback read_callback_;
 };
 
-#endif // UDPCONNECTION_H
+#endif  // BOOST_UDP_CONNECTION_H

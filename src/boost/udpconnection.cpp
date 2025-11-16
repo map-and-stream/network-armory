@@ -1,63 +1,82 @@
-// UDPConnection.cpp
 #include "udpconnection.h"
 
-UDPConnection::UDPConnection(boost::asio::io_context &io_context, const std::string &host, int port)
-    : socket_(io_context, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0)) {
-    boost::asio::ip::udp::resolver resolver(io_context);
-    try {
-        remote_endpoint_ = *resolver.resolve(host, std::to_string(port)).begin();
-        std::cout << "resolve UDP Connection (UDPConnection): " << description() << std::endl;
-    } catch (std::exception& e) {
-        std::cerr << "Error resolve UDP connection (UDPConnection): " << e.what() << "\n";
-    }
+#include <boost/asio/ip/udp.hpp>
+#include <boost/system/error_code.hpp>
+#include <iostream>
 
+// Factory method - not used directly in header, but implemented for completeness.
+UDPConnection::Ptr UDPConnection::create(boost::asio::io_context& io_context,
+                                         const std::string& host, unsigned short port) {
+    return std::make_shared<UDPConnection>(io_context, host, port);
 }
 
-UDPConnection::~UDPConnection()
+UDPConnection::UDPConnection(boost::asio::io_context& io_context, const std::string& host,
+                             unsigned short port)
+    : socket_(io_context, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0)),
+      io_context_(io_context),
+      read_buffer_(2048)  // pre-allocate a reasonable buffer size for UDP datagram
 {
-
+    connect(host, port);
 }
 
-void UDPConnection::send(const std::string& message, const std::string &topic) {
-    auto self = shared_from_this();
-    size_t byte_send = socket_.send_to(boost::asio::buffer(message), remote_endpoint_);
-    if (byte_send > 0) {
-        std::cout << "Writed data (UDPConnection): " << std::endl;
-    } else {
-        std::cerr << "Write error: (UDPConnection)" << std::endl;
+void UDPConnection::connect(const std::string& host, unsigned short port) {
+    boost::asio::ip::udp::resolver resolver(io_context_);
+    try {
+        auto results = resolver.resolve(host, std::to_string(port));
+        remote_endpoint_ = *results.begin();
+        std::cout << "[UDPConnection] Connected to: " << description() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[UDPConnection] Error resolving UDP endpoint: " << e.what() << std::endl;
     }
 }
 
-void UDPConnection::asyncRead(std::function<void(const std::string&, const std::string&)> callback) {
-    read_callback = callback;
+UDPConnection::~UDPConnection() = default;
+
+void UDPConnection::send(const std::vector<uint8_t>& data) {
+    // UDP is connectionless; just send the datagram
+    boost::system::error_code ec;
+    auto bytes_sent = socket_.send_to(boost::asio::buffer(data), remote_endpoint_, 0, ec);
+    if (ec) {
+        std::cerr << "[UDPConnection] Error sending data: " << ec.message() << std::endl;
+    }
+}
+
+void UDPConnection::asyncRead(ReceiveCallback cb) {
+    read_callback_ = cb;
     auto self = shared_from_this();
-    socket_.async_receive_from(boost::asio::buffer(read_buffer),
-                              remote_endpoint_,
-                              std::bind(&UDPConnection::handleRead, this,
-                                        std::placeholders::_1, std::placeholders::_2));
+    socket_.async_receive_from(
+        boost::asio::buffer(read_buffer_), remote_endpoint_,
+        [this, self](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+            handleRead(ec, bytes_transferred);
+        });
+}
+
+void UDPConnection::handleRead(const boost::system::error_code& error,
+                               std::size_t bytes_transferred) {
+    if (!error) {
+        if (read_callback_) {
+            // Trim buffer to amount actually received
+            std::vector<uint8_t> data(read_buffer_.begin(),
+                                      read_buffer_.begin() + bytes_transferred);
+            read_callback_(data);
+        }
+        // Continue receiving asynchronously
+        asyncRead(read_callback_);
+    } else {
+        std::cerr << "[UDPConnection] Error during receive: " << error.message() << std::endl;
+    }
 }
 
 bool UDPConnection::isConnected() const {
-    // For UDP, return true as it does not have a persistent connection.
-    return true;
+    // UDP is usually "connected" -- always return true
+    return socket_.is_open();
 }
 
-std::string UDPConnection::description() const
-{
-    return remote_endpoint_.address().to_string() + ":" + std::to_string(remote_endpoint_.port());
-}
-
-void UDPConnection::handleRead(const boost::system::error_code& error, std::size_t bytes_transferred) {
-    if (!error) {
-        // Create a std::string from the receive buffer
-        std::string message(read_buffer.data(), bytes_transferred);
-        if (read_callback) {
-            read_callback(message, "all"); // Call the user-defined callback
-        }
-        std::cout << " read (UDPConnection): " << std::endl;
-        // Continue receiving asynchronously
-        asyncRead(read_callback);
-    } else {
-        std::cerr << "Error during receive (UDPConnection): " << error.message() << std::endl;
+std::string UDPConnection::description() const {
+    try {
+        return remote_endpoint_.address().to_string() + ":" +
+               std::to_string(remote_endpoint_.port());
+    } catch (...) {
+        return "Not connected";
     }
 }
