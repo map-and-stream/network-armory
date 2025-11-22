@@ -6,9 +6,9 @@
 
 #include "network.h"
 
-
 class NetworkFactory {
   public:
+    static NetworkFactory* createNetwork(NetworkConfig type, LogConfig cfg) {}
     virtual ~NetworkFactory() = default;
 
     virtual std::shared_ptr<INetwork> createTCPClient(const std::string& host, uint16_t port) = 0;
