@@ -3,7 +3,7 @@ OUTPUT_DIR = $(BUILD_DIR)/output
 INSTALL_DIR = $(BUILD_DIR)/install
 
 
-.PHONY: clean build
+.PHONY: clean build rebuild sub-update
 
 build:
 	@echo "Starting build process... $(shell nproc) cores"
@@ -19,3 +19,7 @@ clean:
 	mkdir -p $(OUTPUT_DIR)
 
 rebuild: clean build
+
+sub-update:
+	@echo "Updating submodules..."
+	git submodule update --init --recursive
