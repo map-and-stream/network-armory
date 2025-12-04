@@ -3,68 +3,75 @@
 #include <memory>
 #include <thread>
 #include <chrono>
-#include "boost/boost_network.h"
-#include "network.h"
+#include "client/asio/tcp.h"
 
 int main() {
-    boost::asio::io_context io;
+    asio::io_context io_context;
 
-    BoostNetwork boostNet(io);
+    // Prepare NetworkConfig for TCP connection
+    NetworkConfig cfg;
+    cfg.ip = "127.0.0.1";
+    cfg.port = 12345;
+    cfg.mode = WorkingMode::ASYNC;
+    cfg.keep_alive = false;
 
-    // Example TCP Client
-    std::shared_ptr<INetwork> tcp_client =
-        boostNet.createTCPClient("127.0.0.1", 12345);
+    // Create a TCPConnection via the factory function (returns INetwork*)
+    std::shared_ptr<TCPConnection> tcp =
+        std::make_shared<TCPConnection>(io_context, asio::ip::tcp::socket(io_context));
+    // Optionally, you may use a proper custom factory for dynamic NetworkConfig
 
-    // Example UDP
-    std::shared_ptr<INetwork> udp =
-        boostNet.createUDP("127.0.0.1", 43210);
-
-    // Example Serial (assume "COM1" or "/dev/ttyS1", 9600 baud)
-    std::shared_ptr<INetwork> serial =
-        boostNet.createSerial("COM1", 9600);
-
-    // Try sending and receiving if successfully created
-    if (tcp_client) {
-        tcp_client->asyncRead([](const std::vector<uint8_t>& data) {
-            std::cout << "[TCP Client] Received: ";
-            for (auto c : data)
-                std::cout << std::hex << int(c) << " ";
-            std::cout << std::dec << std::endl;
-        });
-        std::vector<uint8_t> tcp_msg = {'H', 'e', 'l', 'l', 'o', 'T', 'C', 'P'};
-        tcp_client->send(tcp_msg);
+    // Connect to the server
+    Error err = tcp->connect();
+    if (err.code() != ErrorCode::NO_ERROR) {
+        std::cerr << "Failed to connect: " << err.to_string() << std::endl;
+        return 1;
     }
 
-    if (udp) {
-        udp->asyncRead([](const std::vector<uint8_t>& data) {
-            std::cout << "[UDP] Received: ";
-            for (auto c : data)
-                std::cout << std::hex << int(c) << " ";
-            std::cout << std::dec << std::endl;
-        });
-        std::vector<uint8_t> udp_msg = {'H', 'e', 'l', 'l', 'o', 'U', 'D', 'P'};
-        udp->send(udp_msg);
+    std::cout << "[TCP Client] Connected to "
+              << cfg.ip << ":" << cfg.port << std::endl;
+
+    // Prepare data to send
+    std::vector<uint8_t> message = {'H', 'e', 'l', 'l', 'o', ' ', 'T', 'C', 'P'};
+
+    // Send synchronously
+    Error send_err = tcp->send_sync(message);
+    if (send_err.code() != ErrorCode::NO_ERROR) {
+        std::cerr << "Send failed: " << send_err.to_string() << std::endl;
+    } else {
+        std::cout << "[TCP Client] Sent: ";
+        for (auto c : message)
+            std::cout << c;
+        std::cout << std::endl;
     }
 
-    if (serial) {
-        serial->asyncRead([](const std::vector<uint8_t>& data) {
-            std::cout << "[Serial] Received: ";
-            for (auto c : data)
-                std::cout << std::hex << int(c) << " ";
-            std::cout << std::dec << std::endl;
-        });
-        std::vector<uint8_t> serial_msg = {'H', 'e', 'l', 'l', 'o', 'S', 'E', 'R'};
-        serial->send(serial_msg);
+    // Receive synchronously
+    std::vector<uint8_t> recv_data;
+    Error recv_err = tcp->recieve_sync(recv_data);
+    if (recv_err.code() != ErrorCode::NO_ERROR) {
+        std::cerr << "Receive failed: " << recv_err.to_string() << std::endl;
+    } else {
+        std::cout << "[TCP Client] Received: ";
+        for (auto c : recv_data)
+            std::cout << c;
+        std::cout << std::endl;
     }
 
-    // Run event loop in a background thread for demo
-    std::thread io_thread([&io]() { io.run(); });
+    // Demonstrate async receive (and re-use send_async)
+    tcp->recieve_async([](const std::vector<uint8_t>& data){
+        std::cout << "[TCP Client Async] Received: ";
+        for (auto c : data)
+            std::cout << c;
+        std::cout << std::endl;
+    });
 
-    // Let IO context run for a short period to demonstrate async
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    tcp->send_async({'A','S','Y','N','C','!','\n'});
 
-    // Stop io_context and join thread
-    io.stop();
+    // Run event loop in background thread for demonstration
+    std::thread io_thread([&io_context]() { io_context.run(); });
+
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // Allow time for I/O
+
+    io_context.stop();
     io_thread.join();
 
     return 0;

@@ -1,20 +1,25 @@
 set(LIBRARY_NAME network_armory)
 
-file(GLOB_RECURSE CONFIGURE_DEPENDS NETWORK_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
+file(GLOB_RECURSE CONFIGURE_DEPENDS NETWORK_HEADERS 
+    "${CMAKE_CURRENT_SOURCE_DIR}/client/*.h" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/client/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/server/*.h" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/server/*.hpp"
+)
 set(NETWORK_SOURCES
-    boost/boost_network.cpp
-    boost/serialconnection.cpp 
-    boost/tcpconnection.cpp 
-    boost/tcpserver.cpp 
-    boost/udpconnection.cpp 
+    client/asio/tcp.cpp 
 )
 
-# Find Boost and Asio
-find_package(Boost REQUIRED COMPONENTS system)
-if(Boost_FOUND)
-    message(STATUS "Using Boost version: ${Boost_VERSION}")
-endif()
-find_package(Threads REQUIRED)
+# Create a header-only "asio" target
+add_library(asio INTERFACE)
+
+# Add Asio include directory
+target_include_directories(asio INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/third-party/asio/asio/include
+)
+
+# Define standalone mode
+target_compile_definitions(asio INTERFACE ASIO_STANDALONE)
 
 add_library(${LIBRARY_NAME} STATIC 
 ${NETWORK_SOURCES}
@@ -23,12 +28,11 @@ ${NETWORK_HEADERS}
 
 # Link Boost::asio (header-only), Boost::system, and threads
 target_link_libraries(${LIBRARY_NAME} PUBLIC
-    Boost::system
-    Threads::Threads
+    asio
 )
 
 # Optionally (if using Boost headers, e.g., for boost/asio.hpp)
-target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${Boost_INCLUDE_DIRS})
+target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Keep headers associated with this target for IDEs, but do not propagate
 target_sources(${LIBRARY_NAME} PRIVATE ${NETWORK_HEADERS})

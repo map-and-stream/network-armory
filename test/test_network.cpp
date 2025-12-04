@@ -3,8 +3,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "factory.h"
-#include "network.h"
+// #include "factory.h"
+// #include "network.h"
 
 
 TEST(SampleTest, BasicAssertion) {
