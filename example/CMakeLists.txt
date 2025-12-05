@@ -1,4 +1,9 @@
-project(network_armory_example)
+#---------------- client
+add_executable(tcp_client_example client/main.cpp)
+target_link_libraries(tcp_client_example PRIVATE ${LIB_ALIAS})
 
-add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_ALIAS})
+#---------------- server
+#------ posix
+add_executable(tcp_posix_server_example server/posix/main.cpp)
+target_link_libraries(tcp_posix_server_example PRIVATE ${LIB_ALIAS})
+#------ boost
