@@ -11,7 +11,7 @@
 
 class TcpServer {
   public:
-    using Callback = std::function<std::string(const std::string&)>;
+    using Callback = std::function<std::string(int client_id, const std::string&)>;
 
     TcpServer(int port, Callback cb);
 

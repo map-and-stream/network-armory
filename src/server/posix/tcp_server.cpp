@@ -88,7 +88,7 @@ void TcpServer::handle_client_io(fd_set& readfds) {
             }
 
             std::string request(buffer, bytes);
-            std::string response = callback_(request);
+            std::string response = callback_(cfd, request);
 
             send(cfd, response.c_str(), response.size(), 0);
         }
