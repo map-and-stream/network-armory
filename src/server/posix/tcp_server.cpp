@@ -90,7 +90,7 @@ void TcpServer::handle_client_io(fd_set& readfds) {
             std::string request(buffer, bytes);
             std::string response = callback_(cfd, request);
 
-            send(cfd, response.c_str(), response.size(), 0);
+            send_sync(cfd, response);
         }
     }
 
@@ -101,7 +101,7 @@ void TcpServer::handle_client_io(fd_set& readfds) {
     }
 }
 
-void TcpServer::write_sync(int fd, const std::string& data) {
+void TcpServer::send_sync(int fd, const std::string& data) {
     const char* buf = data.c_str();
     size_t total = 0;
     size_t len = data.size();

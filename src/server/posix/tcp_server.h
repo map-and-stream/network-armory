@@ -19,7 +19,7 @@ class TcpServer {
     void run();
     void stop();
 
-    void write_sync(int fd, const std::string& data);
+    void send_sync(int fd, const std::string& data);
 
   private:
     void accept_new_client();
