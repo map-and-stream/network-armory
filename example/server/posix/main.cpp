@@ -1,14 +1,16 @@
 #include "server/posix/tcp_server.h"
 #include <iostream>
 
+std::string callback_function(const std::string& req){
+    std::cout << "callback Received: " << req << std::endl;
+    return "Echo: " + req;  
+}
+
 int main() {
     int port = 8083;
     TcpServer server(
         port,
-        [](const std::string& req) {
-            std::cout << "Received: " << req << std::endl;
-            return "Echo: " + req;
-        }
+        callback_function
     );
 
     if (!server.start()) {

@@ -15,9 +15,11 @@ class TcpServer {
 
     TcpServer(int port, Callback cb);
 
-    bool start();
+    bool start(); //bind to port and start listen
     void run();
     void stop();
+
+    void write_sync(int fd, const std::string& data);
 
   private:
     void accept_new_client();

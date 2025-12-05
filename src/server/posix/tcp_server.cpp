@@ -1,10 +1,11 @@
 #include "tcp_server.h"
 
-TcpServer::TcpServer(int port, Callback cb): port_(port), callback_(cb) {}
+TcpServer::TcpServer(int port, Callback cb) : port_(port), callback_(cb) {}
 
 bool TcpServer::start() {
     server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd_ < 0) return false;
+    if (server_fd_ < 0)
+        return false;
 
     // Make server socket nonblocking
     fcntl(server_fd_, F_SETFL, O_NONBLOCK);
@@ -17,10 +18,10 @@ bool TcpServer::start() {
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port_);
 
-    if (bind(server_fd_, (sockaddr*)&addr, sizeof(addr)) < 0)
+    if (::bind(server_fd_, (sockaddr*)&addr, sizeof(addr)) < 0)
         return false;
 
-    if (listen(server_fd_, SOMAXCONN) < 0)
+    if (::listen(server_fd_, SOMAXCONN) < 0)
         return false;
 
     running_ = true;
@@ -37,15 +38,17 @@ void TcpServer::run() {
 
         for (int cfd : clients_) {
             FD_SET(cfd, &readfds);
-            if (cfd > max_fd) max_fd = cfd;
+            if (cfd > max_fd)
+                max_fd = cfd;
         }
 
         timeval tv{};
         tv.tv_sec = 0;
-        tv.tv_usec = 200000; // 200 ms tick
+        tv.tv_usec = 200000;  // 200 ms tick
 
         int activity = select(max_fd + 1, &readfds, nullptr, nullptr, &tv);
-        if (activity < 0) continue;
+        if (activity < 0)
+            continue;
 
         // New connection?
         if (FD_ISSET(server_fd_, &readfds)) {
@@ -60,8 +63,7 @@ void TcpServer::run() {
 void TcpServer::stop() {
     running_ = false;
     close(server_fd_);
-    for (int cfd : clients_)
-        close(cfd);
+    for (int cfd : clients_) close(cfd);
 }
 
 void TcpServer::accept_new_client() {
@@ -96,5 +98,23 @@ void TcpServer::handle_client_io(fd_set& readfds) {
     for (int cfd : to_remove) {
         close(cfd);
         clients_.erase(std::remove(clients_.begin(), clients_.end(), cfd), clients_.end());
+    }
+}
+
+void TcpServer::write_sync(int fd, const std::string& data) {
+    const char* buf = data.c_str();
+    size_t total = 0;
+    size_t len = data.size();
+
+    while (total < len) {
+        ssize_t sent = send(fd, buf + total, len - total, 0);
+        if (sent <= 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                usleep(1000);
+                continue;
+            }
+            break;
+        }
+        total += sent;
     }
 }
