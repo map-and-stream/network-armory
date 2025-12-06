@@ -1,6 +1,10 @@
 #include "server/posix/tcp_server.h"
 #include <iostream>
 
+/*
+    connect to server by nc -> nc 127.0.0.1 8083
+*/
+
 std::string callback_function(int client_id, const std::string& req){
     std::cout << "callback Received from clientID["<<client_id<<"] msg: " << req << std::endl;
     return "Echo: " + req;  
