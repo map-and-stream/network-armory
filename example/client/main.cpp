@@ -11,13 +11,15 @@ int main() {
     // Prepare NetworkConfig for TCP connection
     NetworkConfig cfg;
     cfg.ip = "127.0.0.1";
-    cfg.port = 12345;
+    cfg.port = 8083;
     cfg.mode = WorkingMode::ASYNC;
     cfg.keep_alive = false;
 
     // Create a TCPConnection via the factory function (returns INetwork*)
     std::shared_ptr<TCPConnection> tcp =
-        std::make_shared<TCPConnection>(io_context, asio::ip::tcp::socket(io_context));
+    std::make_shared<TCPConnection>(io_context, cfg);
+   
+
     // Optionally, you may use a proper custom factory for dynamic NetworkConfig
 
     // Connect to the server
