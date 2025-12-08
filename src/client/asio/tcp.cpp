@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "client/error.h"   // ✅ Your real Error type
+#include "client/error.h"  // ✅ Your real Error type
 
 TCPConnection::TCPConnection(asio::io_context& ctx, const NetworkConfig& cfg)
     : io_context_(ctx), socket_(ctx), cfg_(cfg) {}
@@ -14,10 +14,7 @@ TCPConnection::TCPConnection(asio::io_context& ctx, const NetworkConfig& cfg)
 Error TCPConnection::connect() {
     asio::error_code ec;
 
-    asio::ip::tcp::endpoint ep(
-        asio::ip::make_address(cfg_.ip, ec),
-        cfg_.port
-    );
+    asio::ip::tcp::endpoint ep(asio::ip::make_address(cfg_.ip, ec), cfg_.port);
 
     if (ec)
         return Error(ErrorCode::CONNECTION_FAILED, "Invalid IP");
