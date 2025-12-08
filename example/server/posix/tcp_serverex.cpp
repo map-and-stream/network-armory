@@ -1,9 +1,9 @@
-#include "server/posix/tcp_server.h"
 #include <iostream>
 
+#include "server/posix/tcp_server.h"
+
 std::string callback_function(int client_id, const std::string& req) {
-    std::cout << "callback Received from clientID[" << client_id
-              << "] msg: " << req << std::endl;
+    std::cout << "callback Received from clientID[" << client_id << "] msg: " << req << std::endl;
     return "Echo: " + req + "\n";
 }
 

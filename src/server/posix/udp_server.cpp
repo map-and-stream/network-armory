@@ -1,11 +1,13 @@
 #include "udp_server.h"
+
 #include <iostream>
 
 UdpServer::UdpServer(int port) : port_(port) {}
 
 bool UdpServer::start() {
     sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd_ < 0) return false;
+    if (sockfd_ < 0)
+        return false;
 
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
@@ -25,16 +27,15 @@ void UdpServer::run() {
     socklen_t len = sizeof(client);
 
     while (running_) {
-        int n = recvfrom(sockfd_, buffer, sizeof(buffer), 0,
-                         (sockaddr*)&client, &len);
-        if (n <= 0) continue;
+        int n = recvfrom(sockfd_, buffer, sizeof(buffer), 0, (sockaddr*)&client, &len);
+        if (n <= 0)
+            continue;
 
         std::string msg(buffer, n);
         std::cout << "Received: " << msg << std::endl;
 
         std::string reply = "Echo: " + msg;
-        sendto(sockfd_, reply.c_str(), reply.size(), 0,
-               (sockaddr*)&client, len);
+        sendto(sockfd_, reply.c_str(), reply.size(), 0, (sockaddr*)&client, len);
     }
 }
 

@@ -1,8 +1,9 @@
-#include <iostream>
-#include <vector>
-#include <memory>
-#include "client/asio/tcp.h"
 #include <asio.hpp>
+#include <iostream>
+#include <memory>
+#include <vector>
+
+#include "client/asio/tcp.h"
 
 int main() {
     asio::io_context io_context;
@@ -11,8 +12,7 @@ int main() {
     cfg.ip = "127.0.0.1";
     cfg.port = 8083;
 
-    std::shared_ptr<TCPConnection> tcp =
-        std::make_shared<TCPConnection>(io_context, cfg);
+    std::shared_ptr<TCPConnection> tcp = std::make_shared<TCPConnection>(io_context, cfg);
 
     Error err = tcp->connect();
     if (err.code() != ErrorCode::NO_ERROR) {
@@ -22,7 +22,7 @@ int main() {
 
     std::cout << "[TCP Client] Connected\n";
 
-    std::vector<uint8_t> message = {'H','e','l','l','o','\n'};
+    std::vector<uint8_t> message = {'H', 'e', 'l', 'l', 'o', '\n'};
     tcp->send_sync(message);
 
     std::vector<uint8_t> recv_data;

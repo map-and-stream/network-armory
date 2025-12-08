@@ -5,10 +5,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 class TcpServer {
   public:
@@ -16,7 +16,7 @@ class TcpServer {
 
     TcpServer(int port, Callback cb);
 
-    bool start(); //bind to port and start listen
+    bool start();  // bind to port and start listen
     void run();
     void stop();
 
