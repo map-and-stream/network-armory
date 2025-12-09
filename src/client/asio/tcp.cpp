@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "client/error.h"  // ✅ Your real Error type
+#include "client/error.h"  // Your real Error type
 
 TCPConnection::TCPConnection(asio::io_context& ctx, const NetworkConfig& cfg)
     : io_context_(ctx), socket_(ctx), cfg_(cfg) {}
