@@ -1,8 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
-#include <sstream>
-
 
 TEST(SampleTest, BasicAssertion) {
     EXPECT_EQ(1 + 1, 2);

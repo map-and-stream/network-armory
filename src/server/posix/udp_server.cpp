@@ -1,8 +1,6 @@
 #include "udp_server.h"
 
-#include <iostream>
-
-UdpServer::UdpServer(int port) : port_(port) {}
+UdpServer::UdpServer(int port, Callback cb) : port_(port), callback_(cb) {}
 
 bool UdpServer::start() {
     sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
@@ -21,6 +19,15 @@ bool UdpServer::start() {
     return true;
 }
 
+int UdpServer::get_or_assign_client_id(const sockaddr_in& client) {
+    uint64_t key = (uint64_t(client.sin_addr.s_addr) << 16) | client.sin_port;
+
+    if (client_map_.count(key) == 0) {
+        client_map_[key] = next_client_id_++;
+    }
+    return client_map_[key];
+}
+
 void UdpServer::run() {
     char buffer[1024];
     sockaddr_in client{};
@@ -31,10 +38,13 @@ void UdpServer::run() {
         if (n <= 0)
             continue;
 
-        std::string msg(buffer, n);
-        std::cout << "Received: " << msg << std::endl;
+        std::string req(buffer, n);
 
-        std::string reply = "Echo: " + msg;
+        int client_id = get_or_assign_client_id(client);
+
+        // Only callback output
+        std::string reply = callback_(client_id, req);
+
         sendto(sockfd_, reply.c_str(), reply.size(), 0, (sockaddr*)&client, len);
     }
 }
