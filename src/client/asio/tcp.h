@@ -2,13 +2,8 @@
 #define BOOST_TCP_CONNECTION_H
 
 #include <asio.hpp>
-#include <functional>
-#include <memory>
-#include <string>
 #include <vector>
-
 #include "client/network.h"  // ✅ Your real NetworkConfig
-#include "error.h"           // ✅ Your real Error type
 
 class TCPConnection {
   public:

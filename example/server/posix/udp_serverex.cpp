@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include "server/posix/udp_server.h"
 
 int main() {

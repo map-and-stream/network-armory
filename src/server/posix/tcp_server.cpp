@@ -1,6 +1,6 @@
 #include "tcp_server.h"
-
 #include <algorithm>
+
 TcpServer::TcpServer(int port, Callback cb) : port_(port), callback_(cb) {}
 
 bool TcpServer::start() {
