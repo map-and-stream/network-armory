@@ -3,6 +3,7 @@
 #include <asio.hpp>
 #include <string>
 #include <vector>
+
 #include "client/error.h"  // ✅ Your real Error type
 
 TCPConnection::TCPConnection(asio::io_context& ctx, const NetworkConfig& cfg)
