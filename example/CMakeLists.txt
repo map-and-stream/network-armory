@@ -1,10 +1,10 @@
-#---------------- client
+#---------------- TCP client
 add_executable(tcp_client
     client/tcp_client.cpp
 )
 target_link_libraries(tcp_client PRIVATE ${LIB_ALIAS})
 
-#---------------- server (POSIX)
+#---------------- TCP server
 add_executable(tcp_serverex
     server/posix/tcp_serverex.cpp
     ${CMAKE_SOURCE_DIR}/src/server/posix/tcp_server.cpp
