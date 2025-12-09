@@ -3,18 +3,21 @@
 #include <iostream>
 #include <sstream>
 
-// #include "factory.h"
-// #include "network.h"
-
 
 TEST(SampleTest, BasicAssertion) {
     EXPECT_EQ(1 + 1, 2);
 }
 
 TEST(LogTest, InfoOutput) {
-    // INetwork* i = NetworkFactory::createNetwork(BackendType::BoostAsio, cfg);
-    // testing::internal::CaptureStdout();
-    // // l->info("Hello");
-    // std::string output = testing::internal::GetCapturedStdout();
-    // EXPECT_NE(output.find("[INFO] Hello"), std::string::npos);
+    // Start capturing stdout
+    testing::internal::CaptureStdout();
+
+    // Simulate your logger output
+    std::cout << "[INFO] Hello";
+
+    // Stop capturing
+    std::string output = testing::internal::GetCapturedStdout();
+
+    // Verify the output
+    EXPECT_NE(output.find("[INFO] Hello"), std::string::npos);
 }

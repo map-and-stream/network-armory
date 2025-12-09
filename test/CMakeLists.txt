@@ -7,6 +7,8 @@ enable_testing()
 # Create your test target
 add_executable(network_test
     test_network.cpp
+    tcp_test.cpp
+    udp_test.cpp
 )
 
 # Link against GoogleTest and pthread
