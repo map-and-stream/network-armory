@@ -16,7 +16,7 @@ int main() {
 
     auto udp = std::make_shared<UDP>(io, cfg);
 
-    Error err = udp->Open();
+    Error err = udp->connect();
     if (err.code() != ErrorCode::NO_ERROR) {
         std::cerr << "Failed to Open Socket: " << err.to_string() << std::endl;
         return 1;

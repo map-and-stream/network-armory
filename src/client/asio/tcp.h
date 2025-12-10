@@ -5,21 +5,21 @@
 #include <functional>
 #include <vector>
 
+#include "client/client_interface.h"
 #include "client/error.h"
-#include "client/network.h"
 
-class TCP {
+class TCP :public ClientInterface {
   public:
   TCP(asio::io_context& ctx, const NetworkConfig& cfg);
 
-    Error connect();
-    Error connect_async(std::function<void(Error)> callback);
+    Error connect() override;
+    Error connect_async(std::function<void(Error)> callback) override;
 
-    Error send_sync(const std::vector<uint8_t>& data);
-    Error send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback);
+    Error send_sync(const std::vector<uint8_t>& data) override;
+    Error send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback) override;
 
-    Error recieve_sync(std::vector<uint8_t>& out);
-    Error recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback);
+    Error recieve_sync(std::vector<uint8_t>& out) override;
+    Error recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback) override;
 
     void close();
 

@@ -20,6 +20,7 @@ enum class ErrorCode {
     // Added for UDP server + client behavior
     PORT_IN_USE = 13,         // Server cannot bind to port
     SERVER_UNAVAILABLE = 14,  // Client cannot reach server
+    NOT_IMPLEMENTED = 15,
 };
 
 inline std::string error_message_from_code(ErrorCode code) {

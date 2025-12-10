@@ -6,7 +6,7 @@ CLANG_BUILD_DIR = build_clang
 CLANG_OUTPUT_DIR = $(CLANG_BUILD_DIR)/output
 
 
-.PHONY: clean build build-clang rebuild sub-update
+.PHONY: clean build build-clang rebuild sub-update test
 
 build:
 	@echo "Starting build process... $(shell nproc) cores"
@@ -31,3 +31,7 @@ rebuild: clean build
 sub-update:
 	@echo "Updating submodules..."
 	git submodule update --init --recursive
+
+test:
+	make build
+	cd ${BUILD_DIR}/test; ctest

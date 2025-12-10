@@ -52,7 +52,7 @@ TEST(UdpNetworkApiTest, UDPOpenHandlesBadIp) {
     asio::io_context io;
     NetworkConfig cfg{"bad_ip", 33333};
     UDP udp(io, cfg);
-    Error err = udp.Open();
+    Error err = udp.connect();
     ASSERT_NE(err.code(), ErrorCode::NO_ERROR);
 }
 
@@ -132,7 +132,7 @@ TEST(UdpNetworkApiTest, UDPAsyncSendReceive) {
     NetworkConfig cfg{"127.0.0.1", port};
     UDP udp(io, cfg);
 
-    Error err = udp.Open();
+    Error err = udp.connect();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
 
     std::atomic<bool> done{false};

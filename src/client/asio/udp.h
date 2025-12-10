@@ -4,16 +4,16 @@
 #include <functional>
 #include <vector>
 
+#include "client/client_interface.h"
 #include "client/error.h"
-#include "client/network.h"
 
-class UDP {
+class UDP : public ClientInterface {
   public:
     UDP(asio::io_context& ctx, const NetworkConfig& cfg);
 
-    Error Open();
-    Error send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback);
-    Error recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback);
+    Error connect_async(std::function<void(Error)> callback) override;
+    Error send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback) override;
+    Error recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback) override;
 
   private:
     asio::io_context& io_context_;

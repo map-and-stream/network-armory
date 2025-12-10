@@ -1,9 +1,11 @@
 #include "udp.h"
 
-UDP::UDP(asio::io_context& ctx, const NetworkConfig& cfg)
-    : io_context_(ctx), socket_(ctx), server_endpoint_(), cfg_(cfg) {}
+#include "client/client_interface.h"
 
-Error UDP::Open() {
+UDP::UDP(asio::io_context& ctx, const NetworkConfig& cfg)
+    : ClientInterface(cfg), io_context_(ctx), socket_(ctx), server_endpoint_() {}
+
+Error UDP::connect_async(std::function<void(Error)> callback) {
     asio::error_code ec;
 
     server_endpoint_ = asio::ip::udp::endpoint(asio::ip::make_address(cfg_.ip, ec), cfg_.port);
