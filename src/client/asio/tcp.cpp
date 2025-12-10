@@ -24,11 +24,20 @@ Error TCPConnection::connect() {
 
     return Error();
 }
-Error TCPConnection::connect_async(std::function<void(Error)> callback) {
-    asio::ip::tcp::endpoint ep(asio::ip::tcp::endpoint(asio::ip::make_address(cfg_.ip), cfg_.port));
 
-    socket_.async_connect(ep, [callback](const asio::error_code& ec) {
-        if (ec)
+Error TCPConnection::connect_async(std::function<void(Error)> callback) {
+    asio::error_code ec;
+
+    auto addr = asio::ip::make_address(cfg_.ip, ec);
+    if (ec) {
+        callback(Error(ErrorCode::CONNECTION_FAILED, "Invalid IP"));
+        return Error();
+    }
+
+    asio::ip::tcp::endpoint ep(addr, cfg_.port);
+
+    socket_.async_connect(ep, [callback](const asio::error_code& ec2) {
+        if (ec2)
             callback(Error(ErrorCode::CONNECTION_FAILED, "Async connect failed"));
         else
             callback(Error());
