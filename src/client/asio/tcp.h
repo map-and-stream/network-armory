@@ -3,36 +3,30 @@
 
 #include <asio.hpp>
 #include <functional>
-#include <memory>
-#include <string>
 #include <vector>
 
+#include "client/error.h"
 #include "client/network.h"
 
-class TCPConnection : public INetwork, public std::enable_shared_from_this<TCPConnection> {
+class TCP {
   public:
-    using Ptr = std::shared_ptr<TCPConnection>;
+  TCP(asio::io_context& ctx, const NetworkConfig& cfg);
 
-    static Ptr create(asio::io_context& io_context, const std::string& host, unsigned short port);
+    Error connect();
+    Error connect_async(std::function<void(Error)> callback);
 
-    TCPConnection(asio::io_context& io_context, asio::ip::tcp::socket socket);
-    ~TCPConnection() override;
+    Error send_sync(const std::vector<uint8_t>& data);
+    Error send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback);
 
-    // --- INetwork interface overrides ---
-    Error connect() override;
-    Error send_sync(const std::vector<uint8_t>& data) override;
-    Error send_async(const std::vector<uint8_t>& data) override;
-    Error recieve_sync(std::vector<uint8_t>& recieve_data) override;
-    Error recieve_async(ReceiveCallback cb) override;
+    Error recieve_sync(std::vector<uint8_t>& out);
+    Error recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback);
+
+    void close();
 
   private:
-    void connect_impl(const std::string& host, unsigned short port);
-    void handleRead(const asio::error_code& error, std::size_t bytes_transferred);
-
     asio::io_context& io_context_;
     asio::ip::tcp::socket socket_;
-    std::vector<uint8_t> read_buffer_;
-    ReceiveCallback read_callback_;
+    NetworkConfig cfg_;
 };
 
-#endif
+#endif  // BOOST_TCP_CONNECTION_H

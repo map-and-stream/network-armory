@@ -9,6 +9,8 @@ file(GLOB_RECURSE CONFIGURE_DEPENDS NETWORK_HEADERS
 set(NETWORK_SOURCES
     client/asio/tcp.cpp 
     server/posix/tcp_server.cpp 
+    client/asio/udp.cpp
+    server/posix/udp_server.cpp
 )
 
 # Create a header-only "asio" target

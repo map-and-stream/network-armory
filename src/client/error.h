@@ -16,6 +16,10 @@ enum class ErrorCode {
     ALREADY_CONNECTED = 10,
     NOT_CONNECTED = 11,
     INTERNAL_ERROR = 12,
+
+    // Added for UDP server + client behavior
+    PORT_IN_USE = 13,         // Server cannot bind to port
+    SERVER_UNAVAILABLE = 14,  // Client cannot reach server
 };
 
 inline std::string error_message_from_code(ErrorCode code) {
@@ -46,6 +50,13 @@ inline std::string error_message_from_code(ErrorCode code) {
             return "Not connected";
         case ErrorCode::INTERNAL_ERROR:
             return "Internal error";
+
+        // New messages
+        case ErrorCode::PORT_IN_USE:
+            return "Port is already in use";
+        case ErrorCode::SERVER_UNAVAILABLE:
+            return "Server is unavailable";
+
         default:
             return "Unknown error";
     }
@@ -55,8 +66,7 @@ struct Error {
     ErrorCode error_code = ErrorCode::NO_ERROR;
     std::string error_message;
 
-    Error* set_code(ErrorCode e) noexcept {  // we can use noexcept operator for declare to compiler
-                                             // that this function will not trow exception
+    Error* set_code(ErrorCode e) noexcept {
         error_code = e;
         return this;
     }
