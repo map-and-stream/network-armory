@@ -8,9 +8,9 @@
 #include "client/error.h"
 #include "client/network.h"
 
-class TCPConnection {
+class TCP {
   public:
-    TCPConnection(asio::io_context& ctx, const NetworkConfig& cfg);
+  TCP(asio::io_context& ctx, const NetworkConfig& cfg);
 
     Error connect();
     Error connect_async(std::function<void(Error)> callback);

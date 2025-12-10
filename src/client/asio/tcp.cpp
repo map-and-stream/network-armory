@@ -1,9 +1,9 @@
 #include "tcp.h"
 
-TCPConnection::TCPConnection(asio::io_context& ctx, const NetworkConfig& cfg)
+TCP::TCP(asio::io_context& ctx, const NetworkConfig& cfg)
     : io_context_(ctx), socket_(ctx), cfg_(cfg) {}
 
-Error TCPConnection::connect() {
+Error TCP::connect() {
     asio::error_code ec;
 
     auto addr = asio::ip::make_address(cfg_.ip, ec);
@@ -25,7 +25,7 @@ Error TCPConnection::connect() {
     return Error{};
 }
 
-Error TCPConnection::connect_async(std::function<void(Error)> callback) {
+Error TCP::connect_async(std::function<void(Error)> callback) {
     asio::error_code ec;
 
     auto addr = asio::ip::make_address(cfg_.ip, ec);
@@ -51,7 +51,7 @@ Error TCPConnection::connect_async(std::function<void(Error)> callback) {
     return Error{};
 }
 
-Error TCPConnection::send_sync(const std::vector<uint8_t>& data) {
+Error TCP::send_sync(const std::vector<uint8_t>& data) {
     asio::error_code ec;
     asio::write(socket_, asio::buffer(data), ec);
 
@@ -64,7 +64,7 @@ Error TCPConnection::send_sync(const std::vector<uint8_t>& data) {
     return Error{};
 }
 
-Error TCPConnection::send_async(const std::vector<uint8_t>& data,
+Error TCP::send_async(const std::vector<uint8_t>& data,
                                 std::function<void(Error)> callback) {
     asio::async_write(
         socket_, asio::buffer(data),
@@ -80,7 +80,7 @@ Error TCPConnection::send_async(const std::vector<uint8_t>& data,
     return Error{};
 }
 
-Error TCPConnection::recieve_sync(std::vector<uint8_t>& out) {
+Error TCP::recieve_sync(std::vector<uint8_t>& out) {
     asio::error_code ec;
     uint8_t buf[1024];
 
@@ -96,7 +96,7 @@ Error TCPConnection::recieve_sync(std::vector<uint8_t>& out) {
     return Error{};
 }
 
-Error TCPConnection::recieve_async(
+Error TCP::recieve_async(
     std::function<void(const std::vector<uint8_t>&, Error)> callback) {
     auto buf = std::make_shared<std::vector<uint8_t>>(1024);
     socket_.async_read_some(asio::buffer(*buf), [buf, callback](const asio::error_code& ec,
@@ -113,7 +113,7 @@ Error TCPConnection::recieve_async(
     return Error{};
 }
 
-void TCPConnection::close() {
+void TCP::close() {
     asio::error_code ec;
     socket_.close(ec);
 }

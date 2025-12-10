@@ -1,9 +1,9 @@
 #include "udp.h"
 
-UDPupdate::UDPupdate(asio::io_context& ctx, const NetworkConfig& cfg)
+UDP::UDP(asio::io_context& ctx, const NetworkConfig& cfg)
     : io_context_(ctx), socket_(ctx), server_endpoint_(), cfg_(cfg) {}
 
-Error UDPupdate::Open() {
+Error UDP::Open() {
     asio::error_code ec;
 
     server_endpoint_ = asio::ip::udp::endpoint(asio::ip::make_address(cfg_.ip, ec), cfg_.port);
@@ -31,7 +31,7 @@ Error UDPupdate::Open() {
     return Error{};
 }
 
-Error UDPupdate::send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback) {
+Error UDP::send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback) {
     socket_.async_send_to(
         asio::buffer(data), server_endpoint_, [callback](const asio::error_code& ec, std::size_t) {
             if (ec) {
@@ -46,7 +46,7 @@ Error UDPupdate::send_async(const std::vector<uint8_t>& data, std::function<void
     return Error{};
 }
 
-Error UDPupdate::recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback) {
+Error UDP::recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback) {
     auto buf = std::make_shared<std::vector<uint8_t>>(1024);
     auto sender = std::make_shared<asio::ip::udp::endpoint>();
 

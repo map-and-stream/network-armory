@@ -7,9 +7,9 @@
 #include "client/error.h"
 #include "client/network.h"
 
-class UDPupdate {
+class UDP {
   public:
-    UDPupdate(asio::io_context& ctx, const NetworkConfig& cfg);
+    UDP(asio::io_context& ctx, const NetworkConfig& cfg);
 
     Error Open();
     Error send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback);

@@ -14,7 +14,7 @@ int main() {
     cfg.ip = "127.0.0.1";
     cfg.port = 8084;
 
-    auto udp = std::make_shared<UDPupdate>(io, cfg);
+    auto udp = std::make_shared<UDP>(io, cfg);
 
     Error err = udp->Open();
     if (err.code() != ErrorCode::NO_ERROR) {

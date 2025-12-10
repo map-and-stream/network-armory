@@ -13,7 +13,7 @@ int main() {
     cfg.ip = "127.0.0.1";
     cfg.port = 8083;
 
-    auto tcp = std::make_shared<TCPConnection>(io, cfg);
+    auto tcp = std::make_shared<TCP>(io, cfg);
     std::atomic<bool> connected{false};
 
     // Receive loop
