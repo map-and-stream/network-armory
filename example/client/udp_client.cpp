@@ -12,9 +12,9 @@ int main() {
     cfg.ip = "127.0.0.1";
     cfg.port = 8084;
 
-    auto udp = std::make_shared<UDPConnection>(io, cfg);
+    auto udp = std::make_shared<UDPupdate>(io, cfg);
 
-    Error err = udp->connect();
+    Error err = udp->Open();
     if (err.code() != ErrorCode::NO_ERROR) {
         std::cerr << "Failed to connect: " << err.to_string() << std::endl;
         return 1;
@@ -22,13 +22,34 @@ int main() {
 
     std::cout << "[UDP Client] Ready\n";
 
-    std::vector<uint8_t> msg = {'H', 'e', 'l', 'l', 'o', ' ', 'U', 'D', 'P'};
-    udp->send_sync(msg);
-
+    std::atomic<bool> recv_done{false};
     std::vector<uint8_t> recv_data;
-    udp->recieve_sync(recv_data);
 
-    std::cout << "[UDP Client] Received: ";
+    // Arm async receive BEFORE sending
+    udp->recieve_async([&](const std::vector<uint8_t>& data, Error err) {
+        std::cerr << "[CLIENT] received: " << std::string(data.begin(), data.end())
+                  << " err=" << (int)err.code() << std::endl;
+
+        recv_data = data;
+        recv_done = true;
+    });
+
+    // Send async
+    std::vector<uint8_t> msg = {'H', 'e', 'l', 'l', 'o', ' ', 'U', 'D', 'P'};
+    udp->send_async(msg, [&](Error err) {
+        std::cerr << "[CLIENT] send callback err=" << (int)err.code() << std::endl;
+    });
+
+    // Run io_context so async ops actually happen
+    std::thread io_thread([&]() { io.run(); });
+
+    // Wait for receive
+    while (!recv_done) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+    io.stop();
+    io_thread.join();
+
+    std::cout << "[UDP Client] Final Received: ";
     for (auto c : recv_data) std::cout << c;
     std::cout << std::endl;
 

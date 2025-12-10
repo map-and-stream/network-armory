@@ -1,21 +1,15 @@
 #include <gtest/gtest.h>
 
-#include <iostream>
+#include "tcp_test.cpp"
+#include "udp_test.cpp"
 
-TEST(SampleTest, BasicAssertion) {
-    EXPECT_EQ(1 + 1, 2);
+std::string last_server_received;
+std::string last_udp_server_received;
+
+TEST(TcpNetworkTest, ProjectTcpConnection) {
+    run_tcp_test();
 }
 
-TEST(LogTest, InfoOutput) {
-    // Start capturing stdout
-    testing::internal::CaptureStdout();
-
-    // Simulate your logger output
-    std::cout << "[INFO] Hello";
-
-    // Stop capturing
-    std::string output = testing::internal::GetCapturedStdout();
-
-    // Verify the output
-    EXPECT_NE(output.find("[INFO] Hello"), std::string::npos);
+TEST(UdpNetworkTest, ProjectUdpConnection) {
+    ASSERT_TRUE(run_udp_project_test());
 }

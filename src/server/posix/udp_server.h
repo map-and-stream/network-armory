@@ -17,6 +17,7 @@ class UdpServer {
     bool start();
     void run();
     void stop();
+    void send_async(int fd, const std::string& data, std::function<void()> callback);
 
   private:
     int get_or_assign_client_id(const sockaddr_in& client);
