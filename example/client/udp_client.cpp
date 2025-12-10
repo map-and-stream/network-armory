@@ -1,6 +1,8 @@
 #include <asio.hpp>
+#include <atomic>
 #include <iostream>
 #include <memory>
+#include <thread>
 #include <vector>
 
 #include "client/asio/udp.h"
@@ -16,7 +18,7 @@ int main() {
 
     Error err = udp->Open();
     if (err.code() != ErrorCode::NO_ERROR) {
-        std::cerr << "Failed to connect: " << err.to_string() << std::endl;
+        std::cerr << "Failed to Open Socket: " << err.to_string() << std::endl;
         return 1;
     }
 
@@ -25,7 +27,6 @@ int main() {
     std::atomic<bool> recv_done{false};
     std::vector<uint8_t> recv_data;
 
-    // Arm async receive BEFORE sending
     udp->recieve_async([&](const std::vector<uint8_t>& data, Error err) {
         std::cerr << "[CLIENT] received: " << std::string(data.begin(), data.end())
                   << " err=" << (int)err.code() << std::endl;
@@ -34,16 +35,13 @@ int main() {
         recv_done = true;
     });
 
-    // Send async
     std::vector<uint8_t> msg = {'H', 'e', 'l', 'l', 'o', ' ', 'U', 'D', 'P'};
     udp->send_async(msg, [&](Error err) {
         std::cerr << "[CLIENT] send callback err=" << (int)err.code() << std::endl;
     });
 
-    // Run io_context so async ops actually happen
     std::thread io_thread([&]() { io.run(); });
 
-    // Wait for receive
     while (!recv_done) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
     io.stop();

@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-
 #include <thread>
 
 #include "server/posix/tcp_server.h"
@@ -63,7 +62,8 @@ TEST(UdpServerApiTest, CanConstructAndStartUdpServer) {
 
     UdpServer server(test_port, [&](int, const std::string&) { return "pong"; });
 
-    ASSERT_TRUE(server.start());
+    Error err = server.start();
+    ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
     server.stop();
 }
 
@@ -94,7 +94,8 @@ TEST(TcpServerApiTest, CanConstructAndStartTcpServer) {
 
     TcpServer server(test_port, [&](int, const std::string&) { return "reply"; });
 
-    ASSERT_TRUE(server.start());
+    Error err = server.start();
+    ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
     server.stop();
 }
 
@@ -103,7 +104,9 @@ TEST(TcpServerApiTest, SendSyncDoesNotCrashOnInvalidFd) {
 
     TcpServer server(test_port, [&](int, const std::string&) { return "q"; });
 
-    ASSERT_TRUE(server.start());
+    Error err = server.start();
+    ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
+
     server.send_sync(-1, "data");
     server.stop();
 }
@@ -115,16 +118,15 @@ TEST(UdpNetworkApiTest, UDPAsyncSendReceive) {
 
     std::string last_received;
 
-    // Start UDP server
     UdpServer server(port, [&](int, const std::string& req) {
         last_received = req;
         return "Echo:" + req;
     });
 
-    ASSERT_TRUE(server.start());
+    Error server_err = server.start();
+    ASSERT_EQ(server_err.code(), ErrorCode::NO_ERROR);
     std::thread server_thread([&]() { server.run(); });
 
-    // Client
     asio::io_context io;
     NetworkConfig cfg{"127.0.0.1", port};
     UDPupdate udp(io, cfg);
@@ -165,14 +167,15 @@ TEST(TcpNetworkApiTest, TCPSyncSendReceive) {
         return "Echo:" + req;
     });
 
-    ASSERT_TRUE(server.start());
+    Error err = server.start();
+    ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
     std::thread server_thread([&]() { server.run(); });
 
     asio::io_context io;
     NetworkConfig cfg{"127.0.0.1", port};
     TCPConnection conn(io, cfg);
 
-    Error err = conn.connect();
+    err = conn.connect();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
 
     std::vector<uint8_t> msg = {'H', 'i'};
@@ -201,7 +204,8 @@ TEST(TcpNetworkApiTest, TCPAsyncSendReceive) {
         return "Echo:" + req;
     });
 
-    ASSERT_TRUE(server.start());
+    Error err = server.start();
+    ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
     std::thread server_thread([&]() { server.run(); });
 
     asio::io_context io;

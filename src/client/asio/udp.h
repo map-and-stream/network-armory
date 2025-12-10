@@ -1,17 +1,17 @@
-#ifndef BOOST_UDP_CONNECTION_H
-#define BOOST_UDP_CONNECTION_H
+#pragma once
 
 #include <asio.hpp>
+#include <functional>
 #include <vector>
 
-#include "client/error.h"    // Error, ErrorCode
-#include "client/network.h"  // NetworkConfig
+#include "client/error.h"
+#include "client/network.h"
 
 class UDPupdate {
   public:
     UDPupdate(asio::io_context& ctx, const NetworkConfig& cfg);
 
-    Error Open();  // For UDP: open + prepare endpoint
+    Error Open();
     Error send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback);
     Error recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback);
 
@@ -21,5 +21,3 @@ class UDPupdate {
     asio::ip::udp::endpoint server_endpoint_;
     NetworkConfig cfg_;
 };
-
-#endif

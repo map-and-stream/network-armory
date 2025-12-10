@@ -7,52 +7,67 @@
 #include "client/asio/tcp.h"
 
 int main() {
-    asio::io_context io_context;
+    asio::io_context io;
 
     NetworkConfig cfg;
     cfg.ip = "127.0.0.1";
     cfg.port = 8083;
 
-    auto tcp = std::make_shared<TCPConnection>(io_context, cfg);
+    auto tcp = std::make_shared<TCPConnection>(io, cfg);
+    std::atomic<bool> connected{false};
 
-    Error err = tcp->connect();
-    if (err.code() != ErrorCode::NO_ERROR) {
-        std::cerr << "Failed to connect: " << err.to_string() << std::endl;
-        return 1;
-    }
+    // Receive loop
+    std::function<void()> arm_receive;
+    arm_receive = [&]() {
+        tcp->recieve_async([&](const std::vector<uint8_t>& data, Error err) {
+            if (err.code() != ErrorCode::NO_ERROR) {
+                std::cout << "[CLIENT] Server disconnected, waiting...\n";
+                connected = false;
+                return;
+            }
 
-    std::cout << "[TCP Client] Connected\n";
+            std::string msg(data.begin(), data.end());
+            std::cout << "[CLIENT] Received: " << msg << std::endl;
 
-    std::atomic<bool> recv_done{false};
-    std::vector<uint8_t> recv_data;
+            arm_receive();
+        });
+    };
 
-    // Arm async receive BEFORE sending
-    tcp->recieve_async([&](const std::vector<uint8_t>& data, Error err) {
-        std::cerr << "[CLIENT] received: " << std::string(data.begin(), data.end())
-                  << " err=" << (int)err.code() << std::endl;
+    // Active loop with timer
+    asio::steady_timer timer(io);
+    std::function<void()> active_loop;
 
-        recv_data = data;
-        recv_done = true;
-    });
+    active_loop = [&]() {
+        timer.expires_after(std::chrono::seconds(5));
+        timer.async_wait([&](const asio::error_code&) {
+            if (!connected) {
+                tcp->close();
+                Error err = tcp->connect();
+                if (err.code() == ErrorCode::NO_ERROR) {
+                    std::cout << "[CLIENT] Connected to server\n";
+                    connected = true;
+                    arm_receive();
+                } else {
+                    std::cout << "[CLIENT] Server OFF, waiting...\n";
+                }
+            }
 
-    // Send async
-    std::vector<uint8_t> message = {'H', 'e', 'l', 'l', 'o', '\n'};
-    tcp->send_async(message, [&](Error err) {
-        std::cerr << "[CLIENT] send callback err=" << (int)err.code() << std::endl;
-    });
+            if (connected) {
+                std::vector<uint8_t> msg = {'H', 'e', 'l', 'l', 'o', '\n'};
+                Error err = tcp->send_sync(msg);
+                if (err.code() != ErrorCode::NO_ERROR) {
+                    std::cout << "[CLIENT] Send failed, server OFF\n";
+                    connected = false;
+                } else {
+                    std::cout << "[CLIENT] Sent message\n";
+                }
+            }
 
-    // Run event loop
-    std::thread io_thread([&]() { io_context.run(); });
+            active_loop();
+        });
+    };
 
-    // Wait for receive
-    while (!recv_done) std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
-    io_context.stop();
-    io_thread.join();
-
-    std::cout << "[TCP Client] Final Received: ";
-    for (auto c : recv_data) std::cout << c;
-    std::cout << std::endl;
-
+    active_loop();  // start loop
+    io.run();
     return 0;
 }

@@ -1,62 +1,67 @@
 #include "udp.h"
 
-#include <asio.hpp>
-#include <string>
-#include <vector>
-
 UDPupdate::UDPupdate(asio::io_context& ctx, const NetworkConfig& cfg)
-    : io_context_(ctx), socket_(ctx), server_endpoint_(), cfg_(cfg) {
-    // Nothing else needed
-}
+    : io_context_(ctx), socket_(ctx), server_endpoint_(), cfg_(cfg) {}
 
 Error UDPupdate::Open() {
     asio::error_code ec;
 
-    // Resolve server endpoint
     server_endpoint_ = asio::ip::udp::endpoint(asio::ip::make_address(cfg_.ip, ec), cfg_.port);
 
-    if (ec)
-        return Error(ErrorCode::CONNECTION_FAILED, "Invalid IP");
+    if (ec) {
+        Error err;
+        err.set_code(ErrorCode::INVALID_ADDRESS)->set_message("Invalid IP address");
+        return err;
+    }
 
-    // Open UDP socket
     socket_.open(asio::ip::udp::v4(), ec);
-    if (ec)
-        return Error(ErrorCode::CONNECTION_FAILED, "Failed to open UDP socket");
+    if (ec) {
+        Error err;
+        err.set_code(ErrorCode::CONNECTION_FAILED)->set_message("Failed to open UDP socket");
+        return err;
+    }
 
-    // CRITICAL: Bind to ANY local port so we can receive replies
     socket_.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), 0), ec);
-    if (ec)
-        return Error(ErrorCode::CONNECTION_FAILED, "Failed to bind UDP socket");
+    if (ec) {
+        Error err;
+        err.set_code(ErrorCode::CONNECTION_FAILED)->set_message("Failed to bind UDP client socket");
+        return err;
+    }
 
-    return Error();
+    return Error{};
 }
 
 Error UDPupdate::send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback) {
     socket_.async_send_to(
-        asio::buffer(data), server_endpoint_,
-        [callback](const asio::error_code& ec, std::size_t /*bytes_transferred*/) {
+        asio::buffer(data), server_endpoint_, [callback](const asio::error_code& ec, std::size_t) {
             if (ec) {
-                callback(Error(ErrorCode::SEND_FAILED, "UDP async send failed"));
+                Error err;
+                err.set_code(ErrorCode::SEND_FAILED)->set_message("UDP async send failed");
+                callback(err);
             } else {
-                callback(Error());
+                callback(Error{});
             }
         });
-    return Error();
+
+    return Error{};
 }
 
 Error UDPupdate::recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback) {
     auto buf = std::make_shared<std::vector<uint8_t>>(1024);
-    auto sender_endpoint = std::make_shared<asio::ip::udp::endpoint>();
+    auto sender = std::make_shared<asio::ip::udp::endpoint>();
 
     socket_.async_receive_from(
-        asio::buffer(*buf), *sender_endpoint,
-        [buf, callback](const asio::error_code& ec, std::size_t bytes_received) {
+        asio::buffer(*buf), *sender,
+        [buf, callback](const asio::error_code& ec, std::size_t bytes) {
             if (ec) {
-                callback({}, Error(ErrorCode::RECEIVE_FAILED, "UDP async receive failed"));
+                Error err;
+                err.set_code(ErrorCode::RECEIVE_FAILED)->set_message("UDP async receive failed");
+                callback({}, err);
             } else {
-                buf->resize(bytes_received);
-                callback(*buf, Error());
+                buf->resize(bytes);
+                callback(*buf, Error{});
             }
         });
-    return Error();
+
+    return Error{};
 }

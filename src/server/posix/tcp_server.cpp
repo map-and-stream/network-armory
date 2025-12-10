@@ -1,15 +1,23 @@
 #include "tcp_server.h"
 
 #include <algorithm>
+#include <cstring>
 
-TcpServer::TcpServer(int port, Callback cb) : port_(port), callback_(cb) {}
+TcpServer::TcpServer(int port, Callback cb)
+    : port_(port), server_fd_(-1), callback_(cb) {}
 
-bool TcpServer::start() {
+Error TcpServer::start() {
+    // Clear old clients on restart
+    for (int cfd : clients_) close(cfd);
+    clients_.clear();
+
     server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd_ < 0)
-        return false;
+    if (server_fd_ < 0) {
+        Error err;
+        err.set_code(ErrorCode::CONNECTION_FAILED)->set_message("Failed to create TCP socket");
+        return err;
+    }
 
-    // Make server socket nonblocking
     fcntl(server_fd_, F_SETFL, O_NONBLOCK);
 
     int opt = 1;
@@ -20,14 +28,24 @@ bool TcpServer::start() {
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(port_);
 
-    if (::bind(server_fd_, (sockaddr*)&addr, sizeof(addr)) < 0)
-        return false;
+    if (::bind(server_fd_, (sockaddr*)&addr, sizeof(addr)) < 0) {
+        Error err;
+        if (errno == EADDRINUSE) {
+            err.set_code(ErrorCode::PORT_IN_USE)->set_message("Port is already in use");
+        } else {
+            err.set_code(ErrorCode::CONNECTION_FAILED)->set_message("Bind failed");
+        }
+        return err;
+    }
 
-    if (::listen(server_fd_, SOMAXCONN) < 0)
-        return false;
+    if (::listen(server_fd_, SOMAXCONN) < 0) {
+        Error err;
+        err.set_code(ErrorCode::CONNECTION_FAILED)->set_message("Listen failed");
+        return err;
+    }
 
     running_ = true;
-    return true;
+    return Error{};
 }
 
 void TcpServer::run() {
@@ -46,34 +64,45 @@ void TcpServer::run() {
 
         timeval tv{};
         tv.tv_sec = 0;
-        tv.tv_usec = 200000;  // 200 ms tick
+        tv.tv_usec = 200000;  // 200 ms
 
         int activity = select(max_fd + 1, &readfds, nullptr, nullptr, &tv);
         if (activity < 0)
             continue;
 
-        // New connection?
         if (FD_ISSET(server_fd_, &readfds)) {
             accept_new_client();
         }
 
-        // Existing clients
         handle_client_io(readfds);
     }
 }
 
 void TcpServer::stop() {
     running_ = false;
-    close(server_fd_);
-    for (int cfd : clients_) close(cfd);
+    if (server_fd_ >= 0)
+        close(server_fd_);
+    for (int cfd : clients_)
+        close(cfd);
+    clients_.clear();
 }
 
 void TcpServer::accept_new_client() {
-    int client_fd = accept(server_fd_, nullptr, nullptr);
-    if (client_fd < 0)
-        return;
-    fcntl(client_fd, F_SETFL, O_NONBLOCK);
-    clients_.push_back(client_fd);
+    while (true) {
+        int client_fd = accept(server_fd_, nullptr, nullptr);
+        if (client_fd < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // No more clients to accept
+                return;
+            }
+            std::cerr << "[SERVER] accept() failed: " << strerror(errno) << std::endl;
+            return;
+        }
+
+        fcntl(client_fd, F_SETFL, O_NONBLOCK);
+        clients_.push_back(client_fd);
+        std::cout << "[SERVER] New client accepted: fd=" << client_fd << std::endl;
+    }
 }
 
 void TcpServer::handle_client_io(fd_set& readfds) {
@@ -96,7 +125,6 @@ void TcpServer::handle_client_io(fd_set& readfds) {
         }
     }
 
-    // Remove closed clients
     for (int cfd : to_remove) {
         close(cfd);
         clients_.erase(std::remove(clients_.begin(), clients_.end(), cfd), clients_.end());

@@ -8,17 +8,20 @@
 #include <string>
 #include <unordered_map>
 
+#include "client/error.h"
+
 class UdpServer {
   public:
-    using Callback = std::function<std::string(int client_id, const std::string&)>;
+    using Callback = std::function<std::string(int, const std::string&)>;
 
     UdpServer(int port, Callback cb);
 
-    bool start();
     void run();
     void stop();
+
     void send_async(int fd, const std::string& data, std::function<void()> callback);
     int get_or_assign_client_id(const sockaddr_in& client);
+    Error start();
 
   private:
     int port_;

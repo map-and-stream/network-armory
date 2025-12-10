@@ -1,28 +1,28 @@
 #include "tcp.h"
 
-#include <asio.hpp>
-#include <string>
-#include <vector>
-
-#include "client/error.h"  // Your real Error type
-
 TCPConnection::TCPConnection(asio::io_context& ctx, const NetworkConfig& cfg)
     : io_context_(ctx), socket_(ctx), cfg_(cfg) {}
 
 Error TCPConnection::connect() {
     asio::error_code ec;
 
-    asio::ip::tcp::endpoint ep(asio::ip::make_address(cfg_.ip, ec), cfg_.port);
+    auto addr = asio::ip::make_address(cfg_.ip, ec);
+    if (ec) {
+        Error err;
+        err.set_code(ErrorCode::INVALID_ADDRESS)->set_message("Invalid IP");
+        return err;
+    }
 
-    if (ec)
-        return Error(ErrorCode::CONNECTION_FAILED, "Invalid IP");
-
+    asio::ip::tcp::endpoint ep(addr, cfg_.port);
     socket_.connect(ep, ec);
 
-    if (ec)
-        return Error(ErrorCode::CONNECTION_FAILED, "Connection failed");
+    if (ec) {
+        Error err;
+        err.set_code(ErrorCode::SERVER_UNAVAILABLE)->set_message("Server is offline");
+        return err;
+    }
 
-    return Error();
+    return Error{};
 }
 
 Error TCPConnection::connect_async(std::function<void(Error)> callback) {
@@ -30,43 +30,54 @@ Error TCPConnection::connect_async(std::function<void(Error)> callback) {
 
     auto addr = asio::ip::make_address(cfg_.ip, ec);
     if (ec) {
-        callback(Error(ErrorCode::CONNECTION_FAILED, "Invalid IP"));
-        return Error();
+        Error err;
+        err.set_code(ErrorCode::INVALID_ADDRESS)->set_message("Invalid IP");
+        callback(err);
+        return Error{};
     }
 
     asio::ip::tcp::endpoint ep(addr, cfg_.port);
 
     socket_.async_connect(ep, [callback](const asio::error_code& ec2) {
-        if (ec2)
-            callback(Error(ErrorCode::CONNECTION_FAILED, "Async connect failed"));
-        else
-            callback(Error());
+        if (ec2) {
+            Error err;
+            err.set_code(ErrorCode::CONNECTION_FAILED)->set_message("Async connect failed");
+            callback(err);
+        } else {
+            callback(Error{});
+        }
     });
 
-    return Error();
+    return Error{};
 }
 
 Error TCPConnection::send_sync(const std::vector<uint8_t>& data) {
     asio::error_code ec;
     asio::write(socket_, asio::buffer(data), ec);
 
-    if (ec)
-        return Error(ErrorCode::SEND_FAILED, "Send failed");
+    if (ec) {
+        Error err;
+        err.set_code(ErrorCode::SEND_FAILED)->set_message("Send failed");
+        return err;
+    }
 
-    return Error();
+    return Error{};
 }
 
 Error TCPConnection::send_async(const std::vector<uint8_t>& data,
                                 std::function<void(Error)> callback) {
-    asio::async_write(socket_, asio::buffer(data),
-                      [callback](const asio::error_code& ec, std::size_t /*bytes_transferred*/) {
-                          if (ec) {
-                              callback(Error(ErrorCode::SEND_FAILED, "Async send failed"));
-                          } else {
-                              callback(Error());
-                          }
-                      });
-    return Error();
+    asio::async_write(
+        socket_, asio::buffer(data),
+        [callback](const asio::error_code& ec, std::size_t /*bytes_transferred*/) {
+            if (ec) {
+                Error err;
+                err.set_code(ErrorCode::SEND_FAILED)->set_message("Async send failed");
+                callback(err);
+            } else {
+                callback(Error{});
+            }
+        });
+    return Error{};
 }
 
 Error TCPConnection::recieve_sync(std::vector<uint8_t>& out) {
@@ -75,11 +86,14 @@ Error TCPConnection::recieve_sync(std::vector<uint8_t>& out) {
 
     size_t n = socket_.read_some(asio::buffer(buf), ec);
 
-    if (ec)
-        return Error(ErrorCode::RECEIVE_FAILED, "Receive failed");
+    if (ec) {
+        Error err;
+        err.set_code(ErrorCode::RECEIVE_FAILED)->set_message("Receive failed");
+        return err;
+    }
 
     out.assign(buf, buf + n);
-    return Error();
+    return Error{};
 }
 
 Error TCPConnection::recieve_async(
@@ -88,11 +102,18 @@ Error TCPConnection::recieve_async(
     socket_.async_read_some(asio::buffer(*buf), [buf, callback](const asio::error_code& ec,
                                                                 std::size_t bytes_transferred) {
         if (ec) {
-            callback({}, Error(ErrorCode::RECEIVE_FAILED, "Async receive failed"));
+            Error err;
+            err.set_code(ErrorCode::RECEIVE_FAILED)->set_message("Async receive failed");
+            callback({}, err);
         } else {
             buf->resize(bytes_transferred);
-            callback(*buf, Error());
+            callback(*buf, Error{});
         }
     });
-    return Error();
+    return Error{};
+}
+
+void TCPConnection::close() {
+    asio::error_code ec;
+    socket_.close(ec);
 }
