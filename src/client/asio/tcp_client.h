@@ -1,5 +1,4 @@
-#ifndef BOOST_TCP_CONNECTION_H
-#define BOOST_TCP_CONNECTION_H
+#pragma once
 
 #include <asio.hpp>
 #include <functional>
@@ -29,4 +28,4 @@ class TcpClient : public ClientInterface {
     asio::ip::tcp::socket socket_;
 };
 
-#endif  // BOOST_TCP_CONNECTION_H
+
