@@ -1,21 +1,21 @@
 #include "tcp_client.h"
 
 #include <cstddef>
+#include <iostream>
 
 #include "client/client_interface.h"
 #include "client/error.h"
-#include <iostream>
 
-TcpClient::TcpClient(const NetworkConfig& cfg)
+TcpClientPosix::TcpClientPosix(const NetworkConfig& cfg)
     : ClientInterface(cfg),
       serverIP(cfg.ip),
       serverPort(cfg.port),
       sock(-1),
       running(false),
-      reconnectDelayMs(2000),
+      reconnectDelayMs(cfg.auto_connect.retryTime_ms),
       delimiter() {}
 
-Error TcpClient::connect() {
+Error TcpClientPosix::connect() {
     bool result = internal_connect(true);
     Error err;
     if (!result) {
@@ -23,7 +23,7 @@ Error TcpClient::connect() {
     }
     return err;
 }
-Error TcpClient::connect_async(std::function<void(Error)> callback) {
+Error TcpClientPosix::connect_async(std::function<void(Error)> callback) {
     bool result = internal_connect(false);
     Error err;
     if (!result) {
@@ -32,7 +32,7 @@ Error TcpClient::connect_async(std::function<void(Error)> callback) {
     return err;
 }
 
-Error TcpClient::send_sync(const std::vector<uint8_t>& data) {
+Error TcpClientPosix::send_sync(const std::vector<uint8_t>& data) {
     bool result = sendMessage(data);
     Error err;
     if (!result) {
@@ -41,11 +41,12 @@ Error TcpClient::send_sync(const std::vector<uint8_t>& data) {
     return err;
 }
 
-Error TcpClient::send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback) {
+Error TcpClientPosix::send_async(const std::vector<uint8_t>& data,
+                                 std::function<void(Error)> callback) {
     return send_sync(data);
 }
 
-Error TcpClient::recieve_sync(std::vector<uint8_t>& out) {
+Error TcpClientPosix::recieve_sync(std::vector<uint8_t>& out) {
     Error err;
     std::lock_guard<std::mutex> lock(sockMutex);
     if (sock < 0) {
@@ -64,7 +65,8 @@ Error TcpClient::recieve_sync(std::vector<uint8_t>& out) {
     return err;
 }
 
-Error TcpClient::recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback) {
+Error TcpClientPosix::recieve_async(
+    std::function<void(const std::vector<uint8_t>&, Error)> callback) {
     Error err;
     if (running)
         return err;
@@ -94,9 +96,11 @@ Error TcpClient::recieve_async(std::function<void(const std::vector<uint8_t>&, E
             }
         }
     });
+
+    return err;
 }
 
-Error TcpClient::disconnect() {
+Error TcpClientPosix::disconnect() {
     Error err;
     stop();
     std::lock_guard<std::mutex> lock(sockMutex);
@@ -108,7 +112,7 @@ Error TcpClient::disconnect() {
 }
 
 //------------------------------------------- PRIVATE //-------------------------------------------
-bool TcpClient::sendMessage(const std::vector<uint8_t>& data) {
+bool TcpClientPosix::sendMessage(const std::vector<uint8_t>& data) {
     std::lock_guard<std::mutex> lock(sockMutex);
     if (sock < 0)
         return false;
@@ -117,7 +121,7 @@ bool TcpClient::sendMessage(const std::vector<uint8_t>& data) {
     return ::send(sock, data.data(), data.size(), 0) >= 0;
 }
 
-bool TcpClient::internal_connect(bool isBlocking) {
+bool TcpClientPosix::internal_connect(bool isBlocking) {
     std::lock_guard<std::mutex> lock(sockMutex);
 
     if (sock >= 0)
@@ -149,7 +153,7 @@ bool TcpClient::internal_connect(bool isBlocking) {
     return true;
 }
 
-void TcpClient::stop() {
+void TcpClientPosix::stop() {
     running = false;
     if (recvThread.joinable())
         recvThread.join();

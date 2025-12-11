@@ -1,10 +1,10 @@
+#include "client/asio/tcp_client.h"
+
 #include <asio.hpp>
 #include <atomic>
 #include <iostream>
 #include <memory>
 #include <vector>
-
-#include "client/asio/tcp_client.h"
 
 int main() {
     asio::io_context io;
@@ -13,7 +13,7 @@ int main() {
     cfg.ip = "127.0.0.1";
     cfg.port = 8083;
 
-    auto tcp = std::make_shared<TcpClient>(io, cfg);
+    auto tcp = std::make_shared<TcpClientAsio>(io, cfg);
     std::atomic<bool> connected{false};
 
     // Receive loop

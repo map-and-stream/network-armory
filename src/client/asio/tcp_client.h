@@ -7,9 +7,9 @@
 #include "client/client_interface.h"
 #include "client/error.h"
 
-class TcpClient : public ClientInterface {
+class TcpClientAsio : public ClientInterface {
   public:
-    TcpClient(asio::io_context& ctx, const NetworkConfig& cfg);
+    TcpClientAsio(asio::io_context& ctx, const NetworkConfig& cfg);
 
     Error connect() override;
     Error connect_async(std::function<void(Error)> callback) override;
@@ -27,5 +27,3 @@ class TcpClient : public ClientInterface {
     asio::io_context& io_context_;
     asio::ip::tcp::socket socket_;
 };
-
-

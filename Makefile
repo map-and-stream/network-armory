@@ -10,7 +10,12 @@ CLANG_OUTPUT_DIR = $(CLANG_BUILD_DIR)/output
 
 build:
 	@echo "Starting build process... $(shell nproc) cores"
-	cmake -B $(BUILD_DIR) -DNETWORK_ARMORY_BUILD_TESTS=ON -DNETWORK_ARMORY_BUILD_EXAMPLE=ON
+	cmake -B $(BUILD_DIR) -DNETWORK_ARMORY_BUILD_TESTS=ON -DNETWORK_ARMORY_BUILD_EXAMPLE=ON -DCMAKE_BUILD_TYPE=Release
+	cmake --build $(BUILD_DIR) -j$(shell nproc)
+
+build-debug:
+	@echo "Starting build process... $(shell nproc) cores"
+	cmake -B $(BUILD_DIR) -DNETWORK_ARMORY_BUILD_TESTS=ON -DNETWORK_ARMORY_BUILD_EXAMPLE=ON -DCMAKE_BUILD_TYPE=Debug
 	cmake --build $(BUILD_DIR) -j$(shell nproc)
 
 build-clang:

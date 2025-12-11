@@ -7,29 +7,29 @@
 #include <unistd.h>
 
 #include <functional>
+#include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include "client/error.h"
 
 class TcpServer {
-public:
+  public:
     using Callback = std::function<std::string(int client_id, const std::string&)>;
 
     TcpServer(int port, Callback cb);
 
-    Error start();   // bind to port and listen with error reporting
+    Error start();  // bind to port and listen with error reporting
     void run();
     void stop();
 
     void send_sync(int fd, const std::string& data);
 
-private:
+  private:
     void accept_new_client();
     void handle_client_io(fd_set& readfds);
 
-private:
+  private:
     int port_;
     int server_fd_;
     bool running_ = false;

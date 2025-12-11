@@ -3,10 +3,10 @@
 #include "client/client_interface.h"
 #include "client/error.h"
 
-TcpClient::TcpClient(asio::io_context& ctx, const NetworkConfig& cfg)
+TcpClientAsio::TcpClientAsio(asio::io_context& ctx, const NetworkConfig& cfg)
     : ClientInterface(cfg), io_context_(ctx), socket_(ctx) {}
 
-Error TcpClient::connect() {
+Error TcpClientAsio::connect() {
     asio::error_code ec;
 
     auto addr = asio::ip::make_address(cfg_.ip, ec);
@@ -28,7 +28,7 @@ Error TcpClient::connect() {
     return Error{};
 }
 
-Error TcpClient::connect_async(std::function<void(Error)> callback) {
+Error TcpClientAsio::connect_async(std::function<void(Error)> callback) {
     asio::error_code ec;
 
     auto addr = asio::ip::make_address(cfg_.ip, ec);
@@ -54,7 +54,7 @@ Error TcpClient::connect_async(std::function<void(Error)> callback) {
     return Error{};
 }
 
-Error TcpClient::send_sync(const std::vector<uint8_t>& data) {
+Error TcpClientAsio::send_sync(const std::vector<uint8_t>& data) {
     asio::error_code ec;
     asio::write(socket_, asio::buffer(data), ec);
 
@@ -67,7 +67,8 @@ Error TcpClient::send_sync(const std::vector<uint8_t>& data) {
     return Error{};
 }
 
-Error TcpClient::send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback) {
+Error TcpClientAsio::send_async(const std::vector<uint8_t>& data,
+                                std::function<void(Error)> callback) {
     asio::async_write(
         socket_, asio::buffer(data),
         [callback](const asio::error_code& ec, std::size_t /*bytes_transferred*/) {
@@ -82,7 +83,7 @@ Error TcpClient::send_async(const std::vector<uint8_t>& data, std::function<void
     return Error{};
 }
 
-Error TcpClient::recieve_sync(std::vector<uint8_t>& out) {
+Error TcpClientAsio::recieve_sync(std::vector<uint8_t>& out) {
     asio::error_code ec;
     uint8_t buf[1024];
 
@@ -98,7 +99,8 @@ Error TcpClient::recieve_sync(std::vector<uint8_t>& out) {
     return Error{};
 }
 
-Error TcpClient::recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback) {
+Error TcpClientAsio::recieve_async(
+    std::function<void(const std::vector<uint8_t>&, Error)> callback) {
     auto buf = std::make_shared<std::vector<uint8_t>>(1024);
     socket_.async_read_some(asio::buffer(*buf), [buf, callback](const asio::error_code& ec,
                                                                 std::size_t bytes_transferred) {
@@ -114,7 +116,7 @@ Error TcpClient::recieve_async(std::function<void(const std::vector<uint8_t>&, E
     return Error{};
 }
 
-Error TcpClient::disconnect() {
+Error TcpClientAsio::disconnect() {
     asio::error_code ec;
     socket_.close(ec);
     Error err;

@@ -14,11 +14,9 @@
 #include "client/client_interface.h"
 #include "client/error.h"
 
-class TcpClient : public ClientInterface {
+class TcpClientPosix : public ClientInterface {
   public:
-    using MessageHandler = std::function<void(const std::string&)>;
-
-    TcpClient(const NetworkConfig& cfg);
+    TcpClientPosix(const NetworkConfig& cfg);
 
     Error connect() override;
     Error connect_async(std::function<void(Error)> callback) override;
@@ -33,16 +31,16 @@ class TcpClient : public ClientInterface {
     Error disconnect() override;
 
   private:
+    bool sendMessage(const std::vector<uint8_t>& data);
+    bool internal_connect(bool isBlocking);
+    void stop();
     void setDelimiter(char d) { delimiter = d; }
     void setReconnectDelay(int ms) { reconnectDelayMs = ms; }
-    bool internal_connect(bool isBlocking);
-    bool sendMessage(const std::vector<uint8_t>& data);
     void reconnect() {
         close(sock);
         sock = -1;
         std::this_thread::sleep_for(std::chrono::milliseconds(reconnectDelayMs));
     }
-    void stop();
 
   private:
     std::string serverIP;
