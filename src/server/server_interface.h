@@ -7,62 +7,43 @@
 
 #include "error.h"
 
-enum class ConnectionType { TCP, UDP, Serial };
+enum class ConnectionType { TCP, UDP };
 enum class BackendType { ASIO, POSIX };
-struct NetworkConfig {
-    std::string ip;
+struct ServerConfig {
     int port;
     struct SSLConfig {
         std::string public_key;
     } ssl_config;
-    BackendType backend_type = BackendType::ASIO;
+    BackendType backend_type = BackendType::POSIX;
     ConnectionType connection_type = ConnectionType::TCP;
-    struct AutoConnect {
-        int retryTime_ms = 2000;  // based on milliseconds
-        int retry_count = -1;     // -1 means unlimited
-    } auto_connect;
-    bool keep_alive = true;
 };
 
-class ClientInterface {
+class ServerInterface {
   public:
-    using ReceiveCallback = std::function<void(const std::vector<uint8_t>&, Error)>;
-    using AsyncCallback = std::function<void(Error)>;
+    using ReceiveCallback = std::function<void(int fd, const std::vector<uint8_t>&)>;
+    using ClientConnectCallback = std::function<void(int fd)>;
+    using ClientDisconnectCallback = std::function<void(int fd)>;
 
-    ClientInterface(NetworkConfig cfg) : cfg_(cfg) {}
-    ClientInterface() = delete;
-    virtual ~ClientInterface() = default;
+    ServerInterface(ServerConfig cfg, ReceiveCallback recieveCallback,
+                    ClientConnectCallback clientCallback,
+                    ClientDisconnectCallback clientDisconnectCallback)
+        : cfg_(cfg),
+          recieveCallback_(recieveCallback),
+          clientCallback_(clientCallback),
+          clientDisconnectCallback_(clientDisconnectCallback) {}
+    ServerInterface() = delete;
+    virtual ~ServerInterface() = default;
 
-    virtual Error connect() {
-        Error err;
-        err.set_code(ErrorCode::NOT_IMPLEMENTED);
-        return err;
-    }
-    virtual Error connect_async(AsyncCallback callback) = 0;
+    virtual Error listen() = 0;
 
-    virtual Error disconnect() = 0;
+    virtual Error send(int fd, const std::vector<uint8_t>& data) = 0;
 
-    virtual Error send_sync(const std::vector<uint8_t>& data) {
-        Error err;
-        err.set_code(ErrorCode::NOT_IMPLEMENTED);
-        return err;
-    }
-
-    virtual Error send_async(const std::vector<uint8_t>& data, AsyncCallback callback) = 0;
-
-    virtual Error recieve_sync(std::vector<uint8_t>& recieve_data) {
-        Error err;
-        err.set_code(ErrorCode::NOT_IMPLEMENTED);
-        return err;
-    }
-
-    virtual Error recieve_async(ReceiveCallback callback) = 0;
-
-    bool is_connected() const { return is_connected_; };
-
-    std::string description() const { return cfg_.ip + ":" + std::to_string(cfg_.port); }
+    virtual Error gracefull_shutdown() = 0;
 
   protected:
-    NetworkConfig cfg_;
-    bool is_connected_ = false;
+    ServerConfig cfg_;
+    ReceiveCallback recieveCallback_;
+    ClientConnectCallback clientCallback_;
+    ClientDisconnectCallback clientDisconnectCallback_;
+    bool running_ = false;
 };

@@ -12,27 +12,27 @@
 #include <vector>
 
 #include "error.h"
+#include "server/server_interface.h"
 
-class TcpServer {
+class TcpServer : public ServerInterface {
   public:
-    using Callback = std::function<std::string(int client_id, const std::string&)>;
+    TcpServer(ServerConfig cfg, ReceiveCallback recieveCallback,
+              ClientConnectCallback clientCallback,
+              ClientDisconnectCallback clientDisconnectCallback)
+        : ServerInterface(cfg, recieveCallback, clientCallback, clientDisconnectCallback) {}
 
-    TcpServer(int port, Callback cb);
+    Error listen() override;  // bind to port and listen with error reporting
 
-    Error start();  // bind to port and listen with error reporting
-    void run();
-    void stop();
+    Error send(int fd, const std::vector<uint8_t>& data) override;
 
-    void send_sync(int fd, const std::string& data);
+    Error gracefull_shutdown() override;
 
   private:
     void accept_new_client();
     void handle_client_io(fd_set& readfds);
 
   private:
-    int port_;
+    void run();
     int server_fd_;
-    bool running_ = false;
     std::vector<int> clients_;
-    Callback callback_;
 };
