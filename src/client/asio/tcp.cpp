@@ -1,6 +1,7 @@
 #include "tcp.h"
 
 #include "client/client_interface.h"
+#include "client/error.h"
 
 TCP::TCP(asio::io_context& ctx, const NetworkConfig& cfg)
     : ClientInterface(cfg), io_context_(ctx), socket_(ctx) {}
@@ -113,7 +114,12 @@ Error TCP::recieve_async(std::function<void(const std::vector<uint8_t>&, Error)>
     return Error{};
 }
 
-void TCP::close() {
+Error TCP::disconnect() {
     asio::error_code ec;
     socket_.close(ec);
+    Error err;
+    if (ec.value() != 0) {
+        err.set_code(ErrorCode::DISCONNECTION_FAILED);
+    }
+    return err;
 }

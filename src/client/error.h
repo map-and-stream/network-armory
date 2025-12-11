@@ -21,6 +21,7 @@ enum class ErrorCode {
     PORT_IN_USE = 13,         // Server cannot bind to port
     SERVER_UNAVAILABLE = 14,  // Client cannot reach server
     NOT_IMPLEMENTED = 15,
+    DISCONNECTION_FAILED = 16,
 };
 
 inline std::string error_message_from_code(ErrorCode code) {

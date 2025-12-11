@@ -12,6 +12,7 @@ class UDP : public ClientInterface {
     UDP(asio::io_context& ctx, const NetworkConfig& cfg);
 
     Error connect_async(std::function<void(Error)> callback) override;
+    Error disconnect() override;
     Error send_async(const std::vector<uint8_t>& data,
                      std::function<void(Error)> callback) override;
     Error recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback) override;

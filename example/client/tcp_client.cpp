@@ -41,7 +41,7 @@ int main() {
         timer.expires_after(std::chrono::seconds(5));
         timer.async_wait([&](const asio::error_code&) {
             if (!connected) {
-                tcp->close();
+                tcp->disconnect();
                 Error err = tcp->connect();
                 if (err.code() == ErrorCode::NO_ERROR) {
                     std::cout << "[CLIENT] Connected to server\n";

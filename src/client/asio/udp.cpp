@@ -33,6 +33,11 @@ Error UDP::connect_async(std::function<void(Error)> callback) {
     return Error{};
 }
 
+Error UDP::disconnect() {
+    socket_.close();
+    return Error{};
+}
+
 Error UDP::send_async(const std::vector<uint8_t>& data, std::function<void(Error)> callback) {
     socket_.async_send_to(
         asio::buffer(data), server_endpoint_, [callback](const asio::error_code& ec, std::size_t) {
