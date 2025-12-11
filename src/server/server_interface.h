@@ -7,15 +7,14 @@
 
 #include "error.h"
 
-enum class ConnectionType { TCP, UDP };
-enum class BackendType { ASIO, POSIX };
+enum class ServerType { TCP, UDP };
 struct ServerConfig {
     int port;
     struct SSLConfig {
         std::string public_key;
     } ssl_config;
-    BackendType backend_type = BackendType::POSIX;
-    ConnectionType connection_type = ConnectionType::TCP;
+    enum class BackendType { ASIO, POSIX } backend_type = BackendType::POSIX;
+    ServerType connection_type = ServerType::TCP;
 };
 
 class ServerInterface {

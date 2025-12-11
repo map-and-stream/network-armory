@@ -7,16 +7,16 @@
 
 #include "error.h"
 
-enum class ConnectionType { TCP, UDP, Serial };
-enum class BackendType { ASIO, POSIX };
+enum class ClientType { TCP, UDP, Serial };
+
 struct NetworkConfig {
     std::string ip;
     int port;
     struct SSLConfig {
         std::string public_key;
     } ssl_config;
-    BackendType backend_type = BackendType::ASIO;
-    ConnectionType connection_type = ConnectionType::TCP;
+    enum class BackendType { ASIO, POSIX } backend_type = BackendType::ASIO;
+    ClientType connection_type = ClientType::TCP;
     struct AutoConnect {
         int retryTime_ms = 2000;  // based on milliseconds
         int retry_count = -1;     // -1 means unlimited

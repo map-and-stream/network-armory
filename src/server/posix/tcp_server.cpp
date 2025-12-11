@@ -2,11 +2,9 @@
 
 #include <algorithm>
 #include <cstring>
+#include "error.h"
 
-TcpServer::TcpServer(int port, Callback cb)
-    : port_(port), server_fd_(-1), callback_(cb) {}
-
-Error TcpServer::start() {
+Error TcpServer::listen() {
     // Clear old clients on restart
     for (int cfd : clients_) close(cfd);
     clients_.clear();
@@ -26,7 +24,7 @@ Error TcpServer::start() {
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port_);
+    addr.sin_port = htons(cfg_.port);
 
     if (::bind(server_fd_, (sockaddr*)&addr, sizeof(addr)) < 0) {
         Error err;
@@ -45,6 +43,7 @@ Error TcpServer::start() {
     }
 
     running_ = true;
+    run();
     return Error{};
 }
 
@@ -78,7 +77,7 @@ void TcpServer::run() {
     }
 }
 
-void TcpServer::stop() {
+Error TcpServer::gracefull_shutdown() {
     running_ = false;
     if (server_fd_ >= 0)
         close(server_fd_);
@@ -118,10 +117,9 @@ void TcpServer::handle_client_io(fd_set& readfds) {
                 continue;
             }
 
-            std::string request(buffer, bytes);
-            std::string response = callback_(cfd, request);
+            recieveCallback_(cfd, std::vector<uint8_t>(buffer, buffer + bytes));
 
-            send_sync(cfd, response);
+            // send(cfd, response);
         }
     }
 
@@ -131,13 +129,13 @@ void TcpServer::handle_client_io(fd_set& readfds) {
     }
 }
 
-void TcpServer::send_sync(int fd, const std::string& data) {
-    const char* buf = data.c_str();
+Error TcpServer::send(int fd, const std::vector<uint8_t>& data) {
+    const uint8_t* buf = data.data();
     size_t total = 0;
     size_t len = data.size();
 
     while (total < len) {
-        ssize_t sent = send(fd, buf + total, len - total, 0);
+        ssize_t sent = ::send(fd, buf + total, len - total, 0);
         if (sent <= 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 usleep(1000);

@@ -4,10 +4,23 @@
 
 #include "server/posix/tcp_server.h"
 #include "server/posix/udp_server.h"
+#include "server/server_interface.h"
 #include "tcp_client.h"
 #include "udp_client.h"
 
 // ---------------- TCPConnection Tests ----------------
+
+void receive_callback(int fd, const std::vector<uint8_t>& data) {
+    std::cout << "Received from clientID[" << fd << "] msg: " << std::string(data.begin(), data.end()) << std::endl;
+}
+
+void client_connect_callback(int fd) {
+    std::cout << "Client connected: " << fd << std::endl;
+}
+
+void client_disconnect_callback(int fd) {
+    std::cout << "Client disconnected: " << fd << std::endl;
+}
 
 TEST(TcpNetworkApiTest, CanConstructTCPConnection) {
     asio::io_context io;
@@ -91,25 +104,27 @@ TEST(UdpServerApiTest, CreatesUniqueIdsPerClient) {
 // ---------------- TcpServer Tests ----------------
 
 TEST(TcpServerApiTest, CanConstructAndStartTcpServer) {
-    int test_port = 56234;
+    ServerConfig cfg;
+    cfg.port = 56234;
 
-    TcpServer server(test_port, [&](int, const std::string&) { return "reply"; });
+    TcpServer server(cfg, receive_callback, client_connect_callback, client_disconnect_callback);
 
-    Error err = server.start();
+    Error err = server.listen();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
-    server.stop();
+    server.gracefull_shutdown();
 }
 
 TEST(TcpServerApiTest, SendSyncDoesNotCrashOnInvalidFd) {
-    int test_port = 56235;
+    ServerConfig cfg;
+    cfg.port = 56235;
 
-    TcpServer server(test_port, [&](int, const std::string&) { return "q"; });
+    TcpServer server(cfg, receive_callback, client_connect_callback, client_disconnect_callback);
 
-    Error err = server.start();
+    Error err = server.listen();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
 
-    server.send_sync(-1, "data");
-    server.stop();
+    server.send(-1, std::vector<uint8_t>{'d', 'a', 't', 'a'});
+    server.gracefull_shutdown();
 }
 
 // ---------------- UDP Async Send/Receive (requires server) ----------------
@@ -159,22 +174,19 @@ TEST(UdpNetworkApiTest, UDPAsyncSendReceive) {
 // ---------------- TCP Sync Send/Receive ----------------
 
 TEST(TcpNetworkApiTest, TCPSyncSendReceive) {
-    int port = 60001;
+    ServerConfig cfg;
+    cfg.port = 60001;
 
     std::string last_received;
 
-    TcpServer server(port, [&](int, const std::string& req) {
-        last_received = req;
-        return "Echo:" + req;
-    });
+    TcpServer server(cfg, receive_callback, client_connect_callback, client_disconnect_callback);
 
-    Error err = server.start();
+    Error err = server.listen();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
-    std::thread server_thread([&]() { server.run(); });
 
     asio::io_context io;
-    NetworkConfig cfg{"127.0.0.1", port};
-    TcpClientAsio conn(io, cfg);
+    NetworkConfig cfg1{"127.0.0.1", cfg.port};
+    TcpClientAsio conn(io, cfg1);
 
     err = conn.connect();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
@@ -189,29 +201,25 @@ TEST(TcpNetworkApiTest, TCPSyncSendReceive) {
 
     ASSERT_EQ(std::string(out.begin(), out.end()), "Echo:Hi");
 
-    server.stop();
-    server_thread.join();
+    server.gracefull_shutdown();
 }
 
 // ---------------- TCP Async Send/Receive ----------------
 
 TEST(TcpNetworkApiTest, TCPAsyncSendReceive) {
-    int port = 60002;
+    ServerConfig cfg;
+    cfg.port = 60002;
 
     std::string last_received;
 
-    TcpServer server(port, [&](int, const std::string& req) {
-        last_received = req;
-        return "Echo:" + req;
-    });
+    TcpServer server(cfg, receive_callback, client_connect_callback, client_disconnect_callback);
 
-    Error err = server.start();
+    Error err = server.listen();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
-    std::thread server_thread([&]() { server.run(); });
 
     asio::io_context io;
-    NetworkConfig cfg{"127.0.0.1", port};
-    TcpClientAsio conn(io, cfg);
+    NetworkConfig cfg1{"127.0.0.1", cfg.port};
+    TcpClientAsio conn(io, cfg1);
 
     std::atomic<bool> done{false};
     std::string final_result;
@@ -236,6 +244,5 @@ TEST(TcpNetworkApiTest, TCPAsyncSendReceive) {
     ASSERT_TRUE(done);
     ASSERT_EQ(final_result, "Echo:Bye");
 
-    server.stop();
-    server_thread.join();
+    server.gracefull_shutdown();
 }
