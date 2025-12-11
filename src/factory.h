@@ -4,8 +4,7 @@
 
 #include <memory>
 
-#include "client_interface.h"
-#include "tcp.h"
+#include "client/client_interface.h"
 
 class ClientFactory {
   public:

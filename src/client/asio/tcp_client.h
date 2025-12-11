@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "client/client_interface.h"
-#include "client/error.h"
+#include "error.h"
 
 class TcpClientAsio : public ClientInterface {
   public:

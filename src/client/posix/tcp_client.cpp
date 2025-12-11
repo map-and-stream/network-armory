@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "client/client_interface.h"
-#include "client/error.h"
+#include "error.h"
 
 TcpClientPosix::TcpClientPosix(const NetworkConfig& cfg)
     : ClientInterface(cfg),

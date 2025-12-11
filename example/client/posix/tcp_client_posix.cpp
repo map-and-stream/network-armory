@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "client/error.h"
+#include "error.h"
 #include "client/posix/tcp_client.h"
 
 void tcp_client_sync() {

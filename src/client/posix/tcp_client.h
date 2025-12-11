@@ -12,7 +12,7 @@
 #include <thread>
 
 #include "client/client_interface.h"
-#include "client/error.h"
+#include "error.h"
 
 class TcpClientPosix : public ClientInterface {
   public:

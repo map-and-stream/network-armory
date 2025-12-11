@@ -1,7 +1,7 @@
 #include "tcp_client.h"
 
 #include "client/client_interface.h"
-#include "client/error.h"
+#include "error.h"
 
 TcpClientAsio::TcpClientAsio(asio::io_context& ctx, const NetworkConfig& cfg)
     : ClientInterface(cfg), io_context_(ctx), socket_(ctx) {}

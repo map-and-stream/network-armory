@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "client/error.h"
+#include "error.h"
 
 class UdpServer {
   public:

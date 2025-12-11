@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "client/error.h"
+#include "error.h"
 
 class TcpServer {
   public:
