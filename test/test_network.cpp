@@ -4,21 +4,21 @@
 
 #include "server/posix/tcp_server.h"
 #include "server/posix/udp_server.h"
-#include "tcp.h"
-#include "udp.h"
+#include "tcp_client.h"
+#include "udp_client.h"
 
 // ---------------- TCPConnection Tests ----------------
 
 TEST(TcpNetworkApiTest, CanConstructTCPConnection) {
     asio::io_context io;
     NetworkConfig cfg{"127.0.0.1", 12345};
-    TCP conn(io, cfg);
+    TcpClient conn(io, cfg);
 }
 
 TEST(TcpNetworkApiTest, TCPConnectHandlesBadIp) {
     asio::io_context io;
     NetworkConfig cfg{"bad_ip", 12345};
-    TCP conn(io, cfg);
+    TcpClient conn(io, cfg);
     Error err = conn.connect();
     ASSERT_NE(err.code(), ErrorCode::NO_ERROR);
 }
@@ -26,7 +26,7 @@ TEST(TcpNetworkApiTest, TCPConnectHandlesBadIp) {
 TEST(TcpNetworkApiTest, TCPAsyncConnectHandlesBadIp) {
     asio::io_context io;
     NetworkConfig cfg{"bad_ip", 12345};
-    TCP conn(io, cfg);
+    TcpClient conn(io, cfg);
 
     std::atomic<bool> done{false};
     Error result;
@@ -45,13 +45,13 @@ TEST(TcpNetworkApiTest, TCPAsyncConnectHandlesBadIp) {
 TEST(UdpNetworkApiTest, CanConstructUDPupdate) {
     asio::io_context io;
     NetworkConfig cfg{"127.0.0.1", 9999};
-    UDP udp(io, cfg);
+    UdpClient udp(io, cfg);
 }
 
 TEST(UdpNetworkApiTest, UDPOpenHandlesBadIp) {
     asio::io_context io;
     NetworkConfig cfg{"bad_ip", 33333};
-    UDP udp(io, cfg);
+    UdpClient udp(io, cfg);
     Error err = udp.connect();
     ASSERT_NE(err.code(), ErrorCode::NO_ERROR);
 }
@@ -130,7 +130,7 @@ TEST(UdpNetworkApiTest, UDPAsyncSendReceive) {
 
     asio::io_context io;
     NetworkConfig cfg{"127.0.0.1", port};
-    UDP udp(io, cfg);
+    UdpClient udp(io, cfg);
 
     Error err = udp.connect();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
@@ -174,7 +174,7 @@ TEST(TcpNetworkApiTest, TCPSyncSendReceive) {
 
     asio::io_context io;
     NetworkConfig cfg{"127.0.0.1", port};
-    TCP conn(io, cfg);
+    TcpClient conn(io, cfg);
 
     err = conn.connect();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
@@ -211,7 +211,7 @@ TEST(TcpNetworkApiTest, TCPAsyncSendReceive) {
 
     asio::io_context io;
     NetworkConfig cfg{"127.0.0.1", port};
-    TCP conn(io, cfg);
+    TcpClient conn(io, cfg);
 
     std::atomic<bool> done{false};
     std::string final_result;

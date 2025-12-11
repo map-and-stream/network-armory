@@ -7,9 +7,9 @@ file(GLOB_RECURSE CONFIGURE_DEPENDS NETWORK_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/server/posix/*.hpp"
 )
 set(NETWORK_SOURCES
-    client/asio/tcp.cpp 
+    client/asio/tcp_client.cpp 
     server/posix/tcp_server.cpp 
-    client/asio/udp.cpp
+    client/asio/udp_client.cpp
     server/posix/udp_server.cpp
 )
 

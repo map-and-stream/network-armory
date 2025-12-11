@@ -1,11 +1,11 @@
+#include "client/asio/udp_client.h"
+
 #include <asio.hpp>
 #include <atomic>
 #include <iostream>
 #include <memory>
 #include <thread>
 #include <vector>
-
-#include "client/asio/udp.h"
 
 int main() {
     asio::io_context io;
@@ -14,7 +14,7 @@ int main() {
     cfg.ip = "127.0.0.1";
     cfg.port = 8084;
 
-    auto udp = std::make_shared<UDP>(io, cfg);
+    auto udp = std::make_shared<UdpClient>(io, cfg);
 
     Error err = udp->connect();
     if (err.code() != ErrorCode::NO_ERROR) {
