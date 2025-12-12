@@ -2,11 +2,13 @@
 
 #include <algorithm>
 #include <cstring>
+#include <iostream>
+
 #include "error.h"
 
 Error TcpServer::listen() {
     // Clear old clients on restart
-    for (int cfd : clients_) close(cfd);
+    for (auto client : clients_) close(client.fd);
     clients_.clear();
 
     server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
@@ -55,10 +57,10 @@ void TcpServer::run() {
         FD_SET(server_fd_, &readfds);
         int max_fd = server_fd_;
 
-        for (int cfd : clients_) {
-            FD_SET(cfd, &readfds);
-            if (cfd > max_fd)
-                max_fd = cfd;
+        for (auto c : clients_) {
+            FD_SET(c.fd, &readfds);
+            if (c.fd > max_fd)
+                max_fd = c.fd;
         }
 
         timeval tv{};
@@ -81,14 +83,16 @@ Error TcpServer::gracefull_shutdown() {
     running_ = false;
     if (server_fd_ >= 0)
         close(server_fd_);
-    for (int cfd : clients_)
-        close(cfd);
+    for (auto c : clients_) close(c.fd);
     clients_.clear();
+    return Error{};
 }
 
 void TcpServer::accept_new_client() {
     while (true) {
-        int client_fd = accept(server_fd_, nullptr, nullptr);
+        sockaddr_in client_addr;
+        socklen_t client_len = sizeof(client_addr);
+        int client_fd = accept(server_fd_, reinterpret_cast<sockaddr*>(&client_addr), &client_len);
         if (client_fd < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // No more clients to accept
@@ -99,33 +103,44 @@ void TcpServer::accept_new_client() {
         }
 
         fcntl(client_fd, F_SETFL, O_NONBLOCK);
-        clients_.push_back(client_fd);
-        std::cout << "[SERVER] New client accepted: fd=" << client_fd << std::endl;
+
+        char ipstr[INET_ADDRSTRLEN] = {0};
+        inet_ntop(AF_INET, &client_addr.sin_addr, ipstr, sizeof(ipstr));
+        uint16_t port = ntohs(client_addr.sin_port);
+
+        std::cout << "[SERVER] New client accepted: fd=" << client_fd << ", ip=" << ipstr
+                  << ", port=" << port << std::endl;
+
+        clients_.push_back(ClientInfo{.fd = client_fd, .ip = ipstr});
+        clientConnectionCallback_(client_fd, ipstr);
     }
 }
 
 void TcpServer::handle_client_io(fd_set& readfds) {
-    std::vector<int> to_remove;
+    std::vector<ClientInfo> to_remove;
 
-    for (int cfd : clients_) {
-        if (FD_ISSET(cfd, &readfds)) {
+    for (auto c : clients_) {
+        if (FD_ISSET(c.fd, &readfds)) {
             char buffer[1024];
-            int bytes = recv(cfd, buffer, sizeof(buffer), 0);
+            int bytes = recv(c.fd, buffer, sizeof(buffer), 0);
 
             if (bytes <= 0) {
-                to_remove.push_back(cfd);
+                to_remove.push_back(c);
                 continue;
             }
 
-            recieveCallback_(cfd, std::vector<uint8_t>(buffer, buffer + bytes));
+            recieveCallback_(c.fd, std::vector<uint8_t>(buffer, buffer + bytes));
 
             // send(cfd, response);
         }
     }
 
-    for (int cfd : to_remove) {
-        close(cfd);
-        clients_.erase(std::remove(clients_.begin(), clients_.end(), cfd), clients_.end());
+    for (auto c : to_remove) {
+        close(c.fd);
+        clients_.erase(std::remove_if(clients_.begin(), clients_.end(),
+                                      [&](const ClientInfo& client) { return client.fd == c.fd; }),
+                       clients_.end());
+        clientDisconnectCallback_(c.fd, c.ip);
     }
 }
 

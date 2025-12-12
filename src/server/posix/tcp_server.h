@@ -15,6 +15,12 @@
 #include "server/server_interface.h"
 
 class TcpServer : public ServerInterface {
+    struct ClientInfo {
+      public:
+        int fd;
+        std::string ip;
+    };
+
   public:
     TcpServer(ServerConfig cfg, ReceiveCallback recieveCallback,
               ClientConnectCallback clientCallback,
@@ -34,5 +40,5 @@ class TcpServer : public ServerInterface {
   private:
     void run();
     int server_fd_;
-    std::vector<int> clients_;
+    std::vector<ClientInfo> clients_;
 };

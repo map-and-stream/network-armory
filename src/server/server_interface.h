@@ -20,15 +20,15 @@ struct ServerConfig {
 class ServerInterface {
   public:
     using ReceiveCallback = std::function<void(int fd, const std::vector<uint8_t>&)>;
-    using ClientConnectCallback = std::function<void(int fd)>;
-    using ClientDisconnectCallback = std::function<void(int fd)>;
+    using ClientConnectCallback = std::function<void(int fd, const std::string& ip)>;
+    using ClientDisconnectCallback = std::function<void(int fd, const std::string& ip)>;
 
     ServerInterface(ServerConfig cfg, ReceiveCallback recieveCallback,
-                    ClientConnectCallback clientCallback,
+                    ClientConnectCallback clientConnectionCallback,
                     ClientDisconnectCallback clientDisconnectCallback)
         : cfg_(cfg),
           recieveCallback_(recieveCallback),
-          clientCallback_(clientCallback),
+          clientConnectionCallback_(clientConnectionCallback),
           clientDisconnectCallback_(clientDisconnectCallback) {}
     ServerInterface() = delete;
     virtual ~ServerInterface() = default;
@@ -42,7 +42,7 @@ class ServerInterface {
   protected:
     ServerConfig cfg_;
     ReceiveCallback recieveCallback_;
-    ClientConnectCallback clientCallback_;
+    ClientConnectCallback clientConnectionCallback_;
     ClientDisconnectCallback clientDisconnectCallback_;
     bool running_ = false;
 };

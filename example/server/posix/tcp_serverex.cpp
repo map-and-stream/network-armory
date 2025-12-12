@@ -3,16 +3,21 @@
 #include "server/posix/tcp_server.h"
 #include "server/server_interface.h"
 
+/*
+you can run simple client by run command => nc 127.0.0.1 8083
+*/
+
 void receive_callback(int fd, const std::vector<uint8_t>& data) {
-    std::cout << "Received from clientID[" << fd << "] msg: " << std::string(data.begin(), data.end()) << std::endl;
+    std::cout << "Received from clientID[" << fd
+              << "] msg: " << std::string(data.begin(), data.end()) << std::endl;
 }
 
-void client_connect_callback(int fd) {
-    std::cout << "Client connected: " << fd << std::endl;
+void client_connect_callback(int fd, const std::string& ip) {
+    std::cout << "Client connected  fd[" << fd << "] ip[" << ip << "]" << std::endl;
 }
 
-void client_disconnect_callback(int fd) {
-    std::cout << "Client disconnected: " << fd << std::endl;
+void client_disconnect_callback(int fd, const std::string& ip) {
+    std::cout << "Client disconnected  fd[" << fd << "] ip[" << ip << "]" << std::endl;
 }
 
 int main() {
