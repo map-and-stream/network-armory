@@ -7,9 +7,9 @@
 you can run simple client by run command => nc 127.0.0.1 8083
 */
 
-void receive_callback(int fd, const std::vector<uint8_t>& data) {
+void receive_callback(int fd,const std::string& ip, const std::vector<uint8_t>& data) {
     std::cout << "Received from clientID[" << fd
-              << "] msg: " << std::string(data.begin(), data.end()) << std::endl;
+              << "] ip["<<ip<< "] msg: " << std::string(data.begin(), data.end()) << std::endl;
 }
 
 void client_connect_callback(int fd, const std::string& ip) {

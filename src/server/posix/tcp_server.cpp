@@ -129,7 +129,7 @@ void TcpServer::handle_client_io(fd_set& readfds) {
                 continue;
             }
 
-            recieveCallback_(c.fd, std::vector<uint8_t>(buffer, buffer + bytes));
+            recieveCallback_(c.fd, c.ip, std::vector<uint8_t>(buffer, buffer + bytes));
 
             // send(cfd, response);
         }

@@ -19,7 +19,7 @@ struct ServerConfig {
 
 class ServerInterface {
   public:
-    using ReceiveCallback = std::function<void(int fd, const std::vector<uint8_t>&)>;
+    using ReceiveCallback = std::function<void(int fd, const std::string& ip, const std::vector<uint8_t>&)>;
     using ClientConnectCallback = std::function<void(int fd, const std::string& ip)>;
     using ClientDisconnectCallback = std::function<void(int fd, const std::string& ip)>;
 
