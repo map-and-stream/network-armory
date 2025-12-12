@@ -30,6 +30,7 @@ class TcpServer : public ServerInterface {
     Error listen() override;  // bind to port and listen with error reporting
 
     Error send(int fd, const std::vector<uint8_t>& data) override;
+    Error send(const std::string& ip, const std::vector<uint8_t>& data) override;
 
     Error gracefull_shutdown() override;
 

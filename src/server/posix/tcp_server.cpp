@@ -145,6 +145,7 @@ void TcpServer::handle_client_io(fd_set& readfds) {
 }
 
 Error TcpServer::send(int fd, const std::vector<uint8_t>& data) {
+    Error err;
     const uint8_t* buf = data.data();
     size_t total = 0;
     size_t len = data.size();
@@ -160,4 +161,21 @@ Error TcpServer::send(int fd, const std::vector<uint8_t>& data) {
         }
         total += sent;
     }
+
+    if (total == 0) {
+        err.set_code(ErrorCode::SEND_FAILED)->set_message("total send is zero");
+    }
+    return err;
+}
+
+Error TcpServer::send(const std::string& ip, const std::vector<uint8_t>& data) {
+    // Find the client fd by IP address
+    for (const auto& client : clients_) {
+        if (client.ip == ip) {
+            return send(client.fd, data);
+        }
+    }
+    Error err;
+    err.set_code(ErrorCode::SEND_FAILED)->set_message("ip not found: " + ip);
+    return err;
 }

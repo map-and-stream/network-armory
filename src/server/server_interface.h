@@ -36,6 +36,7 @@ class ServerInterface {
     virtual Error listen() = 0;
 
     virtual Error send(int fd, const std::vector<uint8_t>& data) = 0;
+    virtual Error send(const std::string& ip, const std::vector<uint8_t>& data) = 0;
 
     virtual Error gracefull_shutdown() = 0;
 
