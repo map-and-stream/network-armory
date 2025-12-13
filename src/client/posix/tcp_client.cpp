@@ -23,6 +23,7 @@ Error TcpClientPosix::connect() {
     }
     return err;
 }
+
 Error TcpClientPosix::connect_async(std::function<void(Error)> callback) {
     bool result = internal_connect(false);
     Error err;
@@ -43,7 +44,11 @@ Error TcpClientPosix::send_sync(const std::vector<uint8_t>& data) {
 
 Error TcpClientPosix::send_async(const std::vector<uint8_t>& data,
                                  std::function<void(Error)> callback) {
-    return send_sync(data);
+    // Send and call callback with result
+    Error err = send_sync(data);
+    if (callback)
+        callback(err);
+    return err;
 }
 
 Error TcpClientPosix::recieve_sync(std::vector<uint8_t>& out) {
@@ -117,7 +122,6 @@ bool TcpClientPosix::sendMessage(const std::vector<uint8_t>& data) {
     if (sock < 0)
         return false;
 
-    // std::string data = message + delimiter;
     return ::send(sock, data.data(), data.size(), 0) >= 0;
 }
 
@@ -142,6 +146,24 @@ bool TcpClientPosix::internal_connect(bool isBlocking) {
         sock = -1;
         return false;
     }
+
+    // --- KEEP ALIVE IMPLEMENTATION ---
+    if (cfg_.keep_alive && sock >= 0) {
+        int optval = 1;
+        setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
+
+#if defined(__linux__)
+        int idle = 30, interval = 10, count = 3;  // default values
+        setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
+        setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval));
+        setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count));
+#elif defined(__APPLE__)
+        int interval = 10;
+        setsockopt(sock, IPPROTO_TCP, TCP_KEEPALIVE, &interval, sizeof(interval));
+#endif
+        // You can extend with more platform-specific options
+    }
+    // --- END KEEP ALIVE ---
 
     int flags = fcntl(sock, F_GETFL, 0);
     if (!isBlocking)
