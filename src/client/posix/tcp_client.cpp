@@ -1,6 +1,5 @@
 #include "tcp_client.h"
 
-#include <cstddef>
 #include <iostream>
 
 #include "client/client_interface.h"

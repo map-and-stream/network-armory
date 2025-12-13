@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 #include <atomic>
-#include <cstring>
 #include <functional>
 #include <mutex>
 #include <string>

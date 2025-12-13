@@ -2,7 +2,6 @@
 
 #include <asio.hpp>
 #include <atomic>
-#include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -10,8 +9,6 @@
 #include "server/posix/tcp_server.h"
 #include "server/posix/udp_server.h"
 #include "server/server_interface.h"
-
-
 #include "tcp_client.h"
 #include "udp_client.h"
 
@@ -153,7 +150,6 @@ TEST(NetworkFeatureTest, UDPAsyncSendReceive) {
     server.stop();
     srv_thread.join();
 }
-
 // Test11: TCP Sync Send/Receive
 TEST(NetworkFeatureTest, TCPSyncSendReceive) {
     ServerConfig cfg;

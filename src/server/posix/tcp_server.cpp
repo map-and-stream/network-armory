@@ -45,12 +45,18 @@ Error TcpServer::listen() {
     }
 
     running_ = true;
-    run();
-    return Error{};
+    stop_ = false;
+
+    // Run the select-based event loop in a background thread
+    worker_ = std::thread([this]() { this->run(); });
+
+    Error ok;
+    ok.set_code(ErrorCode::NO_ERROR);
+    return ok;
 }
 
 void TcpServer::run() {
-    while (running_) {
+    while (running_ && !stop_) {
         fd_set readfds;
         FD_ZERO(&readfds);
 
@@ -68,8 +74,12 @@ void TcpServer::run() {
         tv.tv_usec = 200000;  // 200 ms
 
         int activity = select(max_fd + 1, &readfds, nullptr, nullptr, &tv);
-        if (activity < 0)
+        if (activity < 0) {
+            // If we are shutting down, select can fail due to closed fds
+            if (stop_)
+                break;
             continue;
+        }
 
         if (FD_ISSET(server_fd_, &readfds)) {
             accept_new_client();
@@ -80,12 +90,25 @@ void TcpServer::run() {
 }
 
 Error TcpServer::gracefull_shutdown() {
+    stop_ = true;
     running_ = false;
-    if (server_fd_ >= 0)
+
+    if (server_fd_ >= 0) {
         close(server_fd_);
-    for (auto c : clients_) close(c.fd);
+        server_fd_ = -1;
+    }
+
+    for (auto c : clients_) {
+        close(c.fd);
+    }
     clients_.clear();
-    return Error{};
+
+    if (worker_.joinable())
+        worker_.join();
+
+    Error ok;
+    ok.set_code(ErrorCode::NO_ERROR);
+    return ok;
 }
 
 void TcpServer::accept_new_client() {
@@ -130,8 +153,6 @@ void TcpServer::handle_client_io(fd_set& readfds) {
             }
 
             recieveCallback_(c.fd, c.ip, std::vector<uint8_t>(buffer, buffer + bytes));
-
-            // send(cfd, response);
         }
     }
 
