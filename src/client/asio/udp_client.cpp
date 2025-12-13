@@ -5,9 +5,13 @@
 UdpClient::UdpClient(asio::io_context& ctx, const NetworkConfig& cfg)
     : ClientInterface(cfg), io_context_(ctx), socket_(ctx), server_endpoint_() {}
 
-Error UdpClient::connect_async(std::function<void(Error)> callback) {
+// ---------------------------
+// NEW: Synchronous connect()
+// ---------------------------
+Error UdpClient::connect() {
     asio::error_code ec;
 
+    // Resolve server endpoint
     server_endpoint_ = asio::ip::udp::endpoint(asio::ip::make_address(cfg_.ip, ec), cfg_.port);
 
     if (ec) {
@@ -16,6 +20,7 @@ Error UdpClient::connect_async(std::function<void(Error)> callback) {
         return err;
     }
 
+    // Open UDP socket
     socket_.open(asio::ip::udp::v4(), ec);
     if (ec) {
         Error err;
@@ -23,6 +28,7 @@ Error UdpClient::connect_async(std::function<void(Error)> callback) {
         return err;
     }
 
+    // Bind to ephemeral port
     socket_.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), 0), ec);
     if (ec) {
         Error err;
@@ -30,7 +36,17 @@ Error UdpClient::connect_async(std::function<void(Error)> callback) {
         return err;
     }
 
+    is_connected_ = true;
     return Error{};
+}
+
+// ---------------------------
+// Async connect wraps sync connect
+// ---------------------------
+Error UdpClient::connect_async(std::function<void(Error)> callback) {
+    Error err = connect();
+    callback(err);
+    return err;
 }
 
 Error UdpClient::disconnect() {

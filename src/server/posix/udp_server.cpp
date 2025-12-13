@@ -10,6 +10,7 @@ Error UdpServer::start() {
         return err;
     }
 
+    // Set recv timeout
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 100000;
@@ -32,7 +33,13 @@ Error UdpServer::start() {
     }
 
     running_ = true;
-    return Error{};
+
+    // Start server thread
+    worker_ = std::thread([this]() { this->run(); });
+
+    Error ok;
+    ok.set_code(ErrorCode::NO_ERROR);
+    return ok;
 }
 
 int UdpServer::get_or_assign_client_id(const sockaddr_in& client) {
@@ -54,6 +61,7 @@ void UdpServer::run() {
 
         if (!running_)
             break;
+
         if (n < 0)
             continue;
 
@@ -81,8 +89,9 @@ void UdpServer::send_async(int fd, const std::string& data, std::function<void()
         }
     }
 
-    if (found)
+    if (found) {
         sendto(sockfd_, data.c_str(), data.size(), 0, (sockaddr*)&target, sizeof(target));
+    }
 
     if (callback)
         callback();
@@ -90,5 +99,12 @@ void UdpServer::send_async(int fd, const std::string& data, std::function<void()
 
 void UdpServer::stop() {
     running_ = false;
-    close(sockfd_);
+
+    if (sockfd_ >= 0) {
+        close(sockfd_);
+        sockfd_ = -1;
+    }
+
+    if (worker_.joinable())
+        worker_.join();
 }

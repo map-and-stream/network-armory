@@ -1,4 +1,6 @@
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 #include "server/posix/tcp_server.h"
 #include "server/server_interface.h"
@@ -7,9 +9,9 @@
 you can run simple client by run command => nc 127.0.0.1 8083
 */
 
-void receive_callback(int fd,const std::string& ip, const std::vector<uint8_t>& data) {
-    std::cout << "Received from clientID[" << fd
-              << "] ip["<<ip<< "] msg: " << std::string(data.begin(), data.end()) << std::endl;
+void receive_callback(int fd, const std::string& ip, const std::vector<uint8_t>& data) {
+    std::cout << "Received from clientID[" << fd << "] ip[" << ip
+              << "] msg: " << std::string(data.begin(), data.end()) << std::endl;
 }
 
 void client_connect_callback(int fd, const std::string& ip) {
@@ -23,6 +25,7 @@ void client_disconnect_callback(int fd, const std::string& ip) {
 int main() {
     ServerConfig cfg;
     cfg.port = 8083;
+
     TcpServer server(cfg, receive_callback, client_connect_callback, client_disconnect_callback);
 
     Error err = server.listen();
@@ -32,6 +35,13 @@ int main() {
     }
 
     std::cout << "TCP Server started on port 8083\n";
+
+    // Keep the server running
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    // (never reached)
     server.gracefull_shutdown();
     return 0;
 }

@@ -1,6 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <asio.hpp>
+#include <atomic>
+#include <string>
 #include <thread>
+#include <vector>
 
 #include "server/posix/tcp_server.h"
 #include "server/posix/udp_server.h"
@@ -8,38 +12,24 @@
 #include "tcp_client.h"
 #include "udp_client.h"
 
-// ---------------- TCPConnection Tests ----------------
-
-void receive_callback(int fd, const std::vector<uint8_t>& data) {
-    std::cout << "Received from clientID[" << fd << "] msg: " << std::string(data.begin(), data.end()) << std::endl;
-}
-
-void client_connect_callback(int fd) {
-    std::cout << "Client connected: " << fd << std::endl;
-}
-
-void client_disconnect_callback(int fd) {
-    std::cout << "Client disconnected: " << fd << std::endl;
-}
-
-TEST(TcpNetworkApiTest, CanConstructTCPConnection) {
-    asio::io_context io;
+// Test1: Construct TCP Client
+TEST(NetworkBasicTest, ConstructTCPClient) {
     NetworkConfig cfg{"127.0.0.1", 12345};
-    TcpClientAsio conn(io, cfg);
+    TcpClientAsio conn(cfg);
 }
 
-TEST(TcpNetworkApiTest, TCPConnectHandlesBadIp) {
-    asio::io_context io;
-    NetworkConfig cfg{"bad_ip", 12345};
-    TcpClientAsio conn(io, cfg);
+// Test2: TCP Connect Fails With Bad IP (Sync)
+TEST(NetworkConnectionTest, TCPConnectInvalidIp) {
+    NetworkConfig cfg{"invalid_ip", 12345};
+    TcpClientAsio conn(cfg);
     Error err = conn.connect();
     ASSERT_NE(err.code(), ErrorCode::NO_ERROR);
 }
 
-TEST(TcpNetworkApiTest, TCPAsyncConnectHandlesBadIp) {
-    asio::io_context io;
-    NetworkConfig cfg{"bad_ip", 12345};
-    TcpClientAsio conn(io, cfg);
+// Test3: TCP Connect Fails With Bad IP (Async)
+TEST(NetworkConnectionTest, TCPConnectAsyncInvalidIp) {
+    NetworkConfig cfg{"invalid_ip", 12345};
+    TcpClientAsio conn(cfg);
 
     std::atomic<bool> done{false};
     Error result;
@@ -49,41 +39,39 @@ TEST(TcpNetworkApiTest, TCPAsyncConnectHandlesBadIp) {
         done = true;
     });
 
-    io.run();
+    for (int i = 0; i < 20 && !done; ++i) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
     ASSERT_NE(result.code(), ErrorCode::NO_ERROR);
 }
 
-// ---------------- UDPupdate Tests ----------------
-
-TEST(UdpNetworkApiTest, CanConstructUDPupdate) {
+// Test4: Construct UDP Client
+TEST(NetworkBasicTest, ConstructUDPClient) {
     asio::io_context io;
-    NetworkConfig cfg{"127.0.0.1", 9999};
+    NetworkConfig cfg{"127.0.0.1", 5555};
     UdpClient udp(io, cfg);
 }
 
-TEST(UdpNetworkApiTest, UDPOpenHandlesBadIp) {
+// Test5: UDP Connect Fails With Bad IP
+TEST(NetworkConnectionTest, UDPOpenInvalidIp) {
     asio::io_context io;
-    NetworkConfig cfg{"bad_ip", 33333};
+    NetworkConfig cfg{"invalid_ip", 45555};
     UdpClient udp(io, cfg);
     Error err = udp.connect();
     ASSERT_NE(err.code(), ErrorCode::NO_ERROR);
 }
 
-// ---------------- UdpServer Tests ----------------
-
-TEST(UdpServerApiTest, CanConstructAndStartUdpServer) {
-    int test_port = 56123;
-
-    UdpServer server(test_port, [&](int, const std::string&) { return "pong"; });
-
+// Test6: Can Construct and Start UdpServer
+TEST(NetworkServerTest, CanConstructAndStartUdpServer) {
+    int port = 60555;
+    UdpServer server(port, [](int, const std::string&) { return "OK"; });
     Error err = server.start();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
     server.stop();
 }
 
-TEST(UdpServerApiTest, CreatesUniqueIdsPerClient) {
-    UdpServer server(0, [&](int, const std::string&) { return "pong"; });
-
+// Test7: UdpServer Unique Client Ids
+TEST(NetworkServerTest, UdpServerUniqueIds) {
+    UdpServer server(0, [&](int, const std::string&) { return "ping"; });
     sockaddr_in c1{}, c2{};
     c1.sin_family = AF_INET;
     c1.sin_addr.s_addr = htonl(0x7F000001);
@@ -91,62 +79,56 @@ TEST(UdpServerApiTest, CreatesUniqueIdsPerClient) {
     c2.sin_family = AF_INET;
     c2.sin_addr.s_addr = htonl(0x7F000001);
     c2.sin_port = htons(2222);
-
     int id1 = server.get_or_assign_client_id(c1);
     int id2 = server.get_or_assign_client_id(c2);
     int id3 = server.get_or_assign_client_id(c1);
-
     ASSERT_TRUE(id1 != 0 && id2 != 0);
     ASSERT_EQ(id1, id3);
     ASSERT_NE(id1, id2);
 }
 
-// ---------------- TcpServer Tests ----------------
-
-TEST(TcpServerApiTest, CanConstructAndStartTcpServer) {
+// Test8: Can Construct and Start TcpServer
+TEST(NetworkServerTest, CanConstructAndStartTcpServer) {
     ServerConfig cfg;
-    cfg.port = 56234;
-
-    TcpServer server(cfg, receive_callback, client_connect_callback, client_disconnect_callback);
-
+    cfg.port = 60666;
+    auto rx = [](int, const std::string&, const std::vector<uint8_t>&) {};
+    auto on_con = [](int, const std::string&) {};
+    auto on_disc = [](int, const std::string&) {};
+    TcpServer server(cfg, rx, on_con, on_disc);
     Error err = server.listen();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
     server.gracefull_shutdown();
 }
 
-TEST(TcpServerApiTest, SendSyncDoesNotCrashOnInvalidFd) {
+// Test9: TcpServer SendSync on Bad Fd Does Not Crash
+TEST(NetworkServerTest, TcpServerSendSyncBadFd) {
     ServerConfig cfg;
-    cfg.port = 56235;
-
-    TcpServer server(cfg, receive_callback, client_connect_callback, client_disconnect_callback);
-
+    cfg.port = 60667;
+    auto rx = [](int, const std::string&, const std::vector<uint8_t>&) {};
+    auto on_con = [](int, const std::string&) {};
+    auto on_disc = [](int, const std::string&) {};
+    TcpServer server(cfg, rx, on_con, on_disc);
     Error err = server.listen();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
-
-    server.send(-1, std::vector<uint8_t>{'d', 'a', 't', 'a'});
+    server.send(-1, std::vector<uint8_t>{'t', 'e', 's', 't'});
     server.gracefull_shutdown();
 }
 
-// ---------------- UDP Async Send/Receive (requires server) ----------------
-
-TEST(UdpNetworkApiTest, UDPAsyncSendReceive) {
-    int port = 60010;
-
+// Test10: UDP Async Send/Receive with server
+TEST(NetworkFeatureTest, UDPAsyncSendReceive) {
+    int port = 60777;
     std::string last_received;
-
     UdpServer server(port, [&](int, const std::string& req) {
         last_received = req;
         return "Echo:" + req;
     });
-
     Error server_err = server.start();
     ASSERT_EQ(server_err.code(), ErrorCode::NO_ERROR);
-    std::thread server_thread([&]() { server.run(); });
+    std::thread srv_thread([&]() { server.run(); });
 
     asio::io_context io;
     NetworkConfig cfg{"127.0.0.1", port};
     UdpClient udp(io, cfg);
-
     Error err = udp.connect();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
 
@@ -158,68 +140,75 @@ TEST(UdpNetworkApiTest, UDPAsyncSendReceive) {
         final_result.assign(data.begin(), data.end());
         done = true;
     });
-
-    std::vector<uint8_t> msg = {'h', 'i'};
+    std::vector<uint8_t> msg = {'T', 'e', 's', 't'};
     udp.send_async(msg, [&](Error e) { ASSERT_EQ(e.code(), ErrorCode::NO_ERROR); });
-
     io.run();
 
     ASSERT_TRUE(done);
-    ASSERT_EQ(final_result, "Echo:hi");
+    ASSERT_EQ(final_result, "Echo:Test");
 
     server.stop();
-    server_thread.join();
+    srv_thread.join();
 }
-
-// ---------------- TCP Sync Send/Receive ----------------
-
-TEST(TcpNetworkApiTest, TCPSyncSendReceive) {
+// Test11: TCP Sync Send/Receive
+TEST(NetworkFeatureTest, TCPSyncSendReceive) {
     ServerConfig cfg;
-    cfg.port = 60001;
-
+    cfg.port = 60880;
     std::string last_received;
 
-    TcpServer server(cfg, receive_callback, client_connect_callback, client_disconnect_callback);
+    TcpServer* srv_ptr = nullptr;
+    auto rx_cb = [&](int fd, const std::string&, const std::vector<uint8_t>& data) {
+        last_received = std::string(data.begin(), data.end());
+        std::vector<uint8_t> resp{'E', 'c', 'h', 'o', ':'};
+        resp.insert(resp.end(), data.begin(), data.end());
+        srv_ptr->send(fd, resp);
+    };
+    auto on_con = [](int, const std::string&) {};
+    auto on_disc = [](int, const std::string&) {};
 
+    TcpServer server(cfg, rx_cb, on_con, on_disc);
+    srv_ptr = &server;
     Error err = server.listen();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
 
-    asio::io_context io;
-    NetworkConfig cfg1{"127.0.0.1", cfg.port};
-    TcpClientAsio conn(io, cfg1);
+    NetworkConfig client_cfg{"127.0.0.1", cfg.port};
+    TcpClientAsio conn(client_cfg);
 
     err = conn.connect();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
-
-    std::vector<uint8_t> msg = {'H', 'i'};
+    std::vector<uint8_t> msg = {'O', 'K'};
     err = conn.send_sync(msg);
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     std::vector<uint8_t> out;
     err = conn.recieve_sync(out);
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
-
-    ASSERT_EQ(std::string(out.begin(), out.end()), "Echo:Hi");
-
+    ASSERT_EQ(std::string(out.begin(), out.end()), "Echo:OK");
     server.gracefull_shutdown();
 }
 
-// ---------------- TCP Async Send/Receive ----------------
-
-TEST(TcpNetworkApiTest, TCPAsyncSendReceive) {
+// Test12: TCP Async Send/Receive
+TEST(NetworkFeatureTest, TCPAsyncSendReceive) {
     ServerConfig cfg;
-    cfg.port = 60002;
-
+    cfg.port = 60881;
     std::string last_received;
-
-    TcpServer server(cfg, receive_callback, client_connect_callback, client_disconnect_callback);
-
+    TcpServer* srv_ptr = nullptr;
+    auto rx_cb = [&](int fd, const std::string&, const std::vector<uint8_t>& data) {
+        last_received = std::string(data.begin(), data.end());
+        std::vector<uint8_t> resp{'E', 'c', 'h', 'o', ':'};
+        resp.insert(resp.end(), data.begin(), data.end());
+        srv_ptr->send(fd, resp);
+    };
+    auto on_con = [](int, const std::string&) {};
+    auto on_disc = [](int, const std::string&) {};
+    TcpServer server(cfg, rx_cb, on_con, on_disc);
+    srv_ptr = &server;
     Error err = server.listen();
     ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
 
-    asio::io_context io;
-    NetworkConfig cfg1{"127.0.0.1", cfg.port};
-    TcpClientAsio conn(io, cfg1);
+    NetworkConfig client_cfg{"127.0.0.1", cfg.port};
+    TcpClientAsio conn(client_cfg);
 
     std::atomic<bool> done{false};
     std::string final_result;
@@ -227,7 +216,7 @@ TEST(TcpNetworkApiTest, TCPAsyncSendReceive) {
     conn.connect_async([&](Error err) {
         ASSERT_EQ(err.code(), ErrorCode::NO_ERROR);
 
-        std::vector<uint8_t> msg = {'B', 'y', 'e'};
+        std::vector<uint8_t> msg = {'Y', 'a', 'y'};
         conn.send_async(msg, [&](Error err2) {
             ASSERT_EQ(err2.code(), ErrorCode::NO_ERROR);
 
@@ -239,10 +228,11 @@ TEST(TcpNetworkApiTest, TCPAsyncSendReceive) {
         });
     });
 
-    io.run();
+    for (int i = 0; i < 200 && !done; ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
     ASSERT_TRUE(done);
-    ASSERT_EQ(final_result, "Echo:Bye");
+    ASSERT_EQ(final_result, "Echo:Yay");
 
     server.gracefull_shutdown();
 }
