@@ -18,6 +18,9 @@ set(NETWORK_SOURCES
 # Create a header-only "asio" target
 add_library(asio INTERFACE)
 
+# Ensure threading support
+find_package(Threads REQUIRED)
+
 # Add Asio include directory
 target_include_directories(asio INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party/asio/asio/include
@@ -34,6 +37,7 @@ ${NETWORK_HEADERS}
 # Link Boost::asio (header-only), Boost::system, and threads
 target_link_libraries(${LIBRARY_NAME} PUBLIC
     asio
+    Threads::Threads
 )
 
 # Optionally (if using Boost headers, e.g., for boost/asio.hpp)
