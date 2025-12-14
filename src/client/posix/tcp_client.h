@@ -2,10 +2,11 @@
 
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <netinet/tcp.h>  // For TCP_KEEPIDLE, TCP_KEEPINTVL, TCP_KEEPCNT
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include <atomic>
-#include <cstring>
 #include <functional>
 #include <mutex>
 #include <string>
@@ -41,6 +42,7 @@ class TcpClientPosix : public ClientInterface {
         sock = -1;
         std::this_thread::sleep_for(std::chrono::milliseconds(reconnectDelayMs));
     }
+    void set_keep_alive_options(int idle = 30, int interval = 10, int count = 3);
 
   private:
     std::string serverIP;

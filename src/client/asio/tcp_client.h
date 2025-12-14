@@ -1,7 +1,9 @@
 #pragma once
 
 #include <asio.hpp>
+#include <atomic>
 #include <functional>
+#include <thread>
 #include <vector>
 
 #include "client/client_interface.h"
@@ -9,7 +11,8 @@
 
 class TcpClientAsio : public ClientInterface {
   public:
-    TcpClientAsio(asio::io_context& ctx, const NetworkConfig& cfg);
+    TcpClientAsio(const NetworkConfig& cfg);
+    ~TcpClientAsio();
 
     Error connect() override;
     Error connect_async(std::function<void(Error)> callback) override;
@@ -24,6 +27,16 @@ class TcpClientAsio : public ClientInterface {
     Error disconnect() override;
 
   private:
-    asio::io_context& io_context_;
+    void run_io();
+    void start_reconnect_loop();
+
+  private:
+    asio::io_context io_;
+    asio::executor_work_guard<asio::io_context::executor_type> work_guard_;
+    std::thread io_thread_;
+
     asio::ip::tcp::socket socket_;
+    asio::strand<asio::io_context::executor_type> strand_;
+
+    std::atomic<bool> reconnecting_{false};
 };

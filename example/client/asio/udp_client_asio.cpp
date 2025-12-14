@@ -1,11 +1,11 @@
-#include "client/asio/udp_client.h"
-
 #include <asio.hpp>
 #include <atomic>
 #include <iostream>
 #include <memory>
 #include <thread>
 #include <vector>
+
+#include "client/asio/udp_client.h"
 
 int main() {
     asio::io_context io;
@@ -16,13 +16,18 @@ int main() {
 
     auto udp = std::make_shared<UdpClient>(io, cfg);
 
-    Error err = udp->connect();
+    Error err = udp->connect_async([&](Error err) {
+        if (err.code() != ErrorCode::NO_ERROR) {
+            std::cerr << "Failed to Open Socket: " << err.to_string() << std::endl;
+            // Could set a shutdown flag here, but for this simple case just print.
+        } else {
+            std::cout << "[UDP Client] Ready\n";
+        }
+    });
     if (err.code() != ErrorCode::NO_ERROR) {
         std::cerr << "Failed to Open Socket: " << err.to_string() << std::endl;
         return 1;
     }
-
-    std::cout << "[UDP Client] Ready\n";
 
     std::atomic<bool> recv_done{false};
     std::vector<uint8_t> recv_data;
