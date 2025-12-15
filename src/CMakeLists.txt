@@ -1,4 +1,3 @@
-# add_library(${LIB_ALIAS} ALIAS ${LIBRARY_NAME})
 set(LIBRARY_NAME network_armory)
 
 # -----------------------------------------
@@ -27,14 +26,15 @@ set(NETWORK_SOURCES
 # -----------------------------------------
 add_library(asio INTERFACE)
 
+# Threading support
+find_package(Threads REQUIRED)
+
 target_include_directories(asio INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party/asio/asio/include
 )
 
 target_compile_definitions(asio INTERFACE ASIO_STANDALONE)
 
-# Ensure threading support
-find_package(Threads REQUIRED)
 # -----------------------------------------
 # Main library
 # -----------------------------------------
@@ -44,19 +44,20 @@ add_library(${LIBRARY_NAME} STATIC
 )
 
 # -----------------------------------------
-# Include paths (THIS FIXES YOUR ERRORS)
+# Include paths
 # -----------------------------------------
 target_include_directories(${LIBRARY_NAME} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}          # allows #include "factory.h"
-    ${CMAKE_CURRENT_SOURCE_DIR}/client   # allows #include "client_interface.h"
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/client
     ${CMAKE_CURRENT_SOURCE_DIR}/server
 )
 
 # -----------------------------------------
-# Link ASIO
+# Link ASIO + Threads
 # -----------------------------------------
 target_link_libraries(${LIBRARY_NAME} PUBLIC
     asio
+    Threads::Threads
 )
 
 # -----------------------------------------
