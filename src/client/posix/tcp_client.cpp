@@ -23,7 +23,7 @@ Error TcpClientPosix::connect() {
     return err;
 }
 
-Error TcpClientPosix::connect_async(std::function<void(Error)> callback) {
+Error TcpClientPosix::connect_async(std::function<void(Error)>  callback [[maybe_unused]]) {
     bool result = internal_connect(false);
     Error err;
     if (!result) {

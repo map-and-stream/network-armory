@@ -15,7 +15,7 @@ struct NetworkConfig {
 
     struct SSLConfig {
         std::string public_key;
-    } ssl_config;
+    } ssl_config = {};  // By default, do not use SSL (empty config)
 
     enum class BackendType { ASIO, POSIX } backend_type = BackendType::ASIO;
 
@@ -24,7 +24,7 @@ struct NetworkConfig {
     struct AutoConnect {
         int retryTime_ms = 2000;  // milliseconds
         int retry_count = -1;     // -1 means unlimited
-    } auto_connect;
+    } auto_connect = {};
 
     bool keep_alive = true;
 };
@@ -48,7 +48,7 @@ class ClientInterface {
 
     virtual Error disconnect() = 0;
 
-    virtual Error send_sync(const std::vector<uint8_t>& data) {
+    virtual Error send_sync(const std::vector<uint8_t>&  data [[maybe_unused]]) {
         Error err;
         err.set_code(ErrorCode::NOT_IMPLEMENTED);
         return err;
@@ -56,7 +56,7 @@ class ClientInterface {
 
     virtual Error send_async(const std::vector<uint8_t>& data, AsyncCallback callback) = 0;
 
-    virtual Error recieve_sync(std::vector<uint8_t>& recieve_data) {
+    virtual Error recieve_sync(std::vector<uint8_t>&   recieve_data [[maybe_unused]]) {
         Error err;
         err.set_code(ErrorCode::NOT_IMPLEMENTED);
         return err;
