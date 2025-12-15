@@ -1,46 +1,68 @@
+# add_library(${LIB_ALIAS} ALIAS ${LIBRARY_NAME})
 set(LIBRARY_NAME network_armory)
 
+# -----------------------------------------
+# Collect headers and sources
+# -----------------------------------------
 file(GLOB_RECURSE CONFIGURE_DEPENDS NETWORK_HEADERS 
-    "${CMAKE_CURRENT_SOURCE_DIR}/client/*.h" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/client/asio/*.h" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/client/posix/*.h" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/server/posix/*.h" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/client/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/client/asio/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/client/posix/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/server/posix/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/server/posix/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/factory.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/error.h"
 )
+
 set(NETWORK_SOURCES
-    client/asio/tcp_client.cpp 
+    client/asio/tcp_client.cpp
     client/posix/tcp_client.cpp
-    server/posix/tcp_server.cpp 
+    server/posix/tcp_server.cpp
     client/asio/udp_client.cpp
     server/posix/udp_server.cpp
 )
 
-# Create a header-only "asio" target
+# -----------------------------------------
+# ASIO header-only target
+# -----------------------------------------
 add_library(asio INTERFACE)
 
-# Add Asio include directory
 target_include_directories(asio INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party/asio/asio/include
 )
 
-# Define standalone mode
 target_compile_definitions(asio INTERFACE ASIO_STANDALONE)
 
-add_library(${LIBRARY_NAME} STATIC 
-${NETWORK_SOURCES}
-${NETWORK_HEADERS}
+# -----------------------------------------
+# Main library
+# -----------------------------------------
+add_library(${LIBRARY_NAME} STATIC
+    ${NETWORK_SOURCES}
+    ${NETWORK_HEADERS}
 )
 
-# Link Boost::asio (header-only), Boost::system, and threads
+# -----------------------------------------
+# Include paths (THIS FIXES YOUR ERRORS)
+# -----------------------------------------
+target_include_directories(${LIBRARY_NAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}          # allows #include "factory.h"
+    ${CMAKE_CURRENT_SOURCE_DIR}/client   # allows #include "client_interface.h"
+    ${CMAKE_CURRENT_SOURCE_DIR}/server
+)
+
+# -----------------------------------------
+# Link ASIO
+# -----------------------------------------
 target_link_libraries(${LIBRARY_NAME} PUBLIC
     asio
 )
 
-# Optionally (if using Boost headers, e.g., for boost/asio.hpp)
-target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-# Keep headers associated with this target for IDEs, but do not propagate
+# -----------------------------------------
+# Keep headers visible to IDEs
+# -----------------------------------------
 target_sources(${LIBRARY_NAME} PRIVATE ${NETWORK_HEADERS})
 
-# Convenient namespaced alias for downstream targets
+# -----------------------------------------
+# Alias for convenience
+# -----------------------------------------
 add_library(${LIB_ALIAS} ALIAS ${LIBRARY_NAME})

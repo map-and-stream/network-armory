@@ -12,24 +12,29 @@ enum class ClientType { TCP, UDP, Serial };
 struct NetworkConfig {
     std::string ip;
     int port;
+
     struct SSLConfig {
         std::string public_key;
     } ssl_config;
+
     enum class BackendType { ASIO, POSIX } backend_type = BackendType::ASIO;
+
     ClientType connection_type = ClientType::TCP;
+
     struct AutoConnect {
-        int retryTime_ms = 2000;  // based on milliseconds
+        int retryTime_ms = 2000;  // milliseconds
         int retry_count = -1;     // -1 means unlimited
     } auto_connect;
+
     bool keep_alive = true;
 };
 
 class ClientInterface {
   public:
     using ReceiveCallback = std::function<void(const std::vector<uint8_t>&, Error)>;
-    using AsyncCallback = std::function<void(Error)>;
+    using AsyncCallback   = std::function<void(Error)>;
 
-    ClientInterface(NetworkConfig cfg) : cfg_(cfg) {}
+    explicit ClientInterface(NetworkConfig cfg) : cfg_(std::move(cfg)) {}
     ClientInterface() = delete;
     virtual ~ClientInterface() = default;
 
@@ -38,6 +43,7 @@ class ClientInterface {
         err.set_code(ErrorCode::NOT_IMPLEMENTED);
         return err;
     }
+
     virtual Error connect_async(AsyncCallback callback) = 0;
 
     virtual Error disconnect() = 0;
@@ -58,7 +64,7 @@ class ClientInterface {
 
     virtual Error recieve_async(ReceiveCallback callback) = 0;
 
-    bool is_connected() const { return is_connected_; };
+    bool is_connected() const { return is_connected_; }
 
     std::string description() const { return cfg_.ip + ":" + std::to_string(cfg_.port); }
 
