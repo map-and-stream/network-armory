@@ -28,6 +28,7 @@ add_library(asio INTERFACE)
 
 # Threading support
 find_package(Threads REQUIRED)
+# Ensure threading support
 
 # Add Asio include directory
 target_include_directories(asio INTERFACE
