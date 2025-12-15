@@ -29,6 +29,7 @@ add_library(asio INTERFACE)
 # Threading support
 find_package(Threads REQUIRED)
 
+# Add Asio include directory
 target_include_directories(asio INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party/asio/asio/include
 )
@@ -69,3 +70,6 @@ target_sources(${LIBRARY_NAME} PRIVATE ${NETWORK_HEADERS})
 # Alias for convenience
 # -----------------------------------------
 add_library(${LIB_ALIAS} ALIAS ${LIBRARY_NAME})
+
+# Optionally (if using Boost headers, e.g., for boost/asio.hpp)
+target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
