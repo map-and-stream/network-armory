@@ -26,7 +26,6 @@ set(NETWORK_SOURCES
 # -----------------------------------------
 add_library(asio INTERFACE)
 
-# Threading support
 find_package(Threads REQUIRED)
 
 # Add Asio include directory
