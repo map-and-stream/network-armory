@@ -1,11 +1,7 @@
 #include "client/asio/tcp_client.h"
 
-TcpClientAsio::TcpClientAsio(const NetworkConfig& cfg,
-                             std::shared_ptr<asio::io_context> io)
-    : ClientInterface(cfg),
-      io_(std::move(io)),
-      socket_(*io_),
-      strand_(asio::make_strand(*io_)) {}
+TcpClientAsio::TcpClientAsio(const NetworkConfig& cfg, std::shared_ptr<asio::io_context> io)
+    : ClientInterface(cfg), io_(std::move(io)), socket_(*io_), strand_(asio::make_strand(*io_)) {}
 
 TcpClientAsio::~TcpClientAsio() {
     disconnect();
@@ -57,21 +53,18 @@ Error TcpClientAsio::connect_async(AsyncCallback callback) {
 
     auto self = shared_from_this();
     socket_.async_connect(
-        ep,
-        asio::bind_executor(
-            strand_,
-            [self, callback](const asio::error_code& ec2) {
-                if (ec2) {
-                    Error err;
-                    err.set_code(ErrorCode::CONNECTION_FAILED)->set_message("Async connect failed");
-                    callback(err);
-                    self->start_reconnect_loop();
-                } else {
-                    self->reconnecting_ = false;
-                    self->is_connected_ = true;
-                    callback(Error{});
-                }
-            }));
+        ep, asio::bind_executor(strand_, [self, callback](const asio::error_code& ec2) {
+            if (ec2) {
+                Error err;
+                err.set_code(ErrorCode::CONNECTION_FAILED)->set_message("Async connect failed");
+                callback(err);
+                self->start_reconnect_loop();
+            } else {
+                self->reconnecting_ = false;
+                self->is_connected_ = true;
+                callback(Error{});
+            }
+        }));
 
     return Error{};
 }
@@ -107,27 +100,23 @@ void TcpClientAsio::start_reconnect_loop() {
             asio::ip::tcp::endpoint ep(addr, self->cfg_.port);
 
             self->socket_.async_connect(
-                ep,
-                asio::bind_executor(
-                    self->strand_,
-                    [self, state](const asio::error_code& ec2) mutable {
-                        if (!ec2) {
-                            self->reconnecting_ = false;
-                            self->is_connected_ = true;
-                            return;
-                        }
+                ep, asio::bind_executor(
+                        self->strand_, [self, state](const asio::error_code& ec2) mutable {
+                            if (!ec2) {
+                                self->reconnecting_ = false;
+                                self->is_connected_ = true;
+                                return;
+                            }
 
-                        state->delay = std::min(state->delay * 2, 30);
-                        auto timer = std::make_shared<asio::steady_timer>(
-                            *self->io_, std::chrono::seconds(state->delay));
+                            state->delay = std::min(state->delay * 2, 30);
+                            auto timer = std::make_shared<asio::steady_timer>(
+                                *self->io_, std::chrono::seconds(state->delay));
 
-                        timer->async_wait(
-                            asio::bind_executor(
-                                self->strand_,
-                                [state, timer](const asio::error_code&) mutable {
+                            timer->async_wait(asio::bind_executor(
+                                self->strand_, [state, timer](const asio::error_code&) mutable {
                                     state->attempt();
                                 }));
-                    }));
+                        }));
         };
 
         state->attempt();
@@ -151,24 +140,20 @@ Error TcpClientAsio::send_sync(const std::vector<uint8_t>& data) {
 
 // ====================== SEND (ASYNC) ======================
 
-Error TcpClientAsio::send_async(const std::vector<uint8_t>& data,
-                                AsyncCallback callback) {
+Error TcpClientAsio::send_async(const std::vector<uint8_t>& data, AsyncCallback callback) {
     auto self = shared_from_this();
 
     asio::async_write(
-        socket_,
-        asio::buffer(data),
-        asio::bind_executor(
-            strand_,
-            [self, callback](const asio::error_code& ec, std::size_t) {
-                if (ec) {
-                    Error err;
-                    err.set_code(ErrorCode::SEND_FAILED)->set_message("Async send failed");
-                    callback(err);
-                } else {
-                    callback(Error{});
-                }
-            }));
+        socket_, asio::buffer(data),
+        asio::bind_executor(strand_, [self, callback](const asio::error_code& ec, std::size_t) {
+            if (ec) {
+                Error err;
+                err.set_code(ErrorCode::SEND_FAILED)->set_message("Async send failed");
+                callback(err);
+            } else {
+                callback(Error{});
+            }
+        }));
 
     return Error{};
 }
@@ -200,8 +185,7 @@ Error TcpClientAsio::recieve_async(ReceiveCallback callback) {
     socket_.async_read_some(
         asio::buffer(*buf),
         asio::bind_executor(
-            strand_,
-            [self, buf, callback](const asio::error_code& ec, std::size_t n) {
+            strand_, [self, buf, callback](const asio::error_code& ec, std::size_t n) {
                 if (ec) {
                     Error err;
                     err.set_code(ErrorCode::RECEIVE_FAILED)->set_message("Async receive failed");

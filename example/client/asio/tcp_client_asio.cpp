@@ -8,7 +8,7 @@
 
 int main() {
     NetworkConfig cfg;
-    cfg.ip   = "127.0.0.1";
+    cfg.ip = "127.0.0.1";
     cfg.port = 8083;
     cfg.connection_type = ClientType::TCP;
 

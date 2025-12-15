@@ -1,13 +1,7 @@
 #include "client/asio/udp_client.h"
 
-UdpClient::UdpClient(const NetworkConfig& cfg,
-                     std::shared_ptr<asio::io_context> io)
-    : ClientInterface(cfg),
-      io_(std::move(io)),
-      socket_(*io_),
-      server_endpoint_()
-{
-}
+UdpClient::UdpClient(const NetworkConfig& cfg, std::shared_ptr<asio::io_context> io)
+    : ClientInterface(cfg), io_(std::move(io)), socket_(*io_), server_endpoint_() {}
 
 // ====================== CONNECT (SYNC) ======================
 
@@ -60,9 +54,7 @@ Error UdpClient::disconnect() {
 
 // ====================== SEND (ASYNC) ======================
 
-Error UdpClient::send_async(const std::vector<uint8_t>& data,
-                            AsyncCallback callback)
-{
+Error UdpClient::send_async(const std::vector<uint8_t>& data, AsyncCallback callback) {
     auto self = shared_from_this();
 
     socket_.async_send_to(
@@ -84,7 +76,7 @@ Error UdpClient::send_async(const std::vector<uint8_t>& data,
 
 Error UdpClient::recieve_async(ReceiveCallback callback) {
     auto self = shared_from_this();
-    auto buf    = std::make_shared<std::vector<uint8_t>>(1024);
+    auto buf = std::make_shared<std::vector<uint8_t>>(1024);
     auto sender = std::make_shared<asio::ip::udp::endpoint>();
 
     socket_.async_receive_from(

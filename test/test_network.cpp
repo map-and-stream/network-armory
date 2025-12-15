@@ -6,15 +6,12 @@
 #include <thread>
 #include <vector>
 
+#include "client/asio/udp_client.h"
+#include "client/client_interface.h"
+#include "factory.h"
 #include "server/posix/tcp_server.h"
 #include "server/posix/udp_server.h"
 #include "server/server_interface.h"
-
-#include "client/client_interface.h"
-#include "client/asio/tcp_client.h"
-#include "client/asio/udp_client.h"
-
-#include "factory.h"
 
 // ====================== Test 1: Construct TCP Client via factory ======================
 
@@ -56,8 +53,7 @@ TEST(NetworkConnectionTest, TCPConnectAsyncInvalidIp) {
         done = true;
     });
 
-    for (int i = 0; i < 40 && !done; ++i)
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    for (int i = 0; i < 40 && !done; ++i) std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
     ASSERT_TRUE(done);
     ASSERT_NE(result.code(), ErrorCode::NO_ERROR);
@@ -124,8 +120,8 @@ TEST(NetworkServerTest, CanConstructAndStartTcpServer) {
     ServerConfig cfg;
     cfg.port = 60666;
 
-    auto rx      = [](int, const std::string&, const std::vector<uint8_t>&) {};
-    auto on_con  = [](int, const std::string&) {};
+    auto rx = [](int, const std::string&, const std::vector<uint8_t>&) {};
+    auto on_con = [](int, const std::string&) {};
     auto on_disc = [](int, const std::string&) {};
 
     TcpServer server(cfg, rx, on_con, on_disc);
@@ -140,8 +136,8 @@ TEST(NetworkServerTest, TcpServerSendSyncBadFd) {
     ServerConfig cfg;
     cfg.port = 60667;
 
-    auto rx      = [](int, const std::string&, const std::vector<uint8_t>&) {};
-    auto on_con  = [](int, const std::string&) {};
+    auto rx = [](int, const std::string&, const std::vector<uint8_t>&) {};
+    auto on_con = [](int, const std::string&) {};
     auto on_disc = [](int, const std::string&) {};
 
     TcpServer server(cfg, rx, on_con, on_disc);
@@ -186,9 +182,7 @@ TEST(NetworkFeatureTest, UDPAsyncSendReceive) {
     });
 
     std::vector<uint8_t> msg = {'T', 'e', 's', 't'};
-    udp.send_async(msg, [&](Error e) {
-        ASSERT_EQ(e.code(), ErrorCode::NO_ERROR);
-    });
+    udp.send_async(msg, [&](Error e) { ASSERT_EQ(e.code(), ErrorCode::NO_ERROR); });
 
     io->run();
 
@@ -215,7 +209,7 @@ TEST(NetworkFeatureTest, TCPSyncSendReceive) {
         srv_ptr->send(fd, resp);
     };
 
-    auto on_con  = [](int, const std::string&) {};
+    auto on_con = [](int, const std::string&) {};
     auto on_disc = [](int, const std::string&) {};
 
     TcpServer server(cfg, rx_cb, on_con, on_disc);
@@ -263,7 +257,7 @@ TEST(NetworkFeatureTest, TCPAsyncSendReceive) {
         srv_ptr->send(fd, resp);
     };
 
-    auto on_con  = [](int, const std::string&) {};
+    auto on_con = [](int, const std::string&) {};
     auto on_disc = [](int, const std::string&) {};
 
     TcpServer server(cfg, rx_cb, on_con, on_disc);

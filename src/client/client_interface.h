@@ -32,7 +32,7 @@ struct NetworkConfig {
 class ClientInterface {
   public:
     using ReceiveCallback = std::function<void(const std::vector<uint8_t>&, Error)>;
-    using AsyncCallback   = std::function<void(Error)>;
+    using AsyncCallback = std::function<void(Error)>;
 
     explicit ClientInterface(NetworkConfig cfg) : cfg_(std::move(cfg)) {}
     ClientInterface() = delete;

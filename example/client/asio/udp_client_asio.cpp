@@ -5,19 +5,19 @@
 #include <thread>
 #include <vector>
 
-#include "client/client_interface.h"
 #include "client/asio/udp_client.h"
+#include "client/client_interface.h"
 
 int main() {
     auto io = std::make_shared<asio::io_context>();
 
     NetworkConfig cfg;
-    cfg.ip   = "127.0.0.1";
+    cfg.ip = "127.0.0.1";
     cfg.port = 8084;
     cfg.connection_type = ClientType::UDP;
 
     auto udp = std::make_shared<UdpClient>(cfg, io);
-    
+
     std::atomic<bool> recv_done{false};
     std::vector<uint8_t> recv_data;
 
@@ -36,7 +36,8 @@ int main() {
 
             std::vector<uint8_t> msg = {'H', 'e', 'l', 'l', 'o', ' ', 'U', 'D', 'P'};
             udp->send_async(msg, [&](Error err3) {
-                std::cerr << "[CLIENT] send callback err=" << static_cast<int>(err3.code()) << std::endl;
+                std::cerr << "[CLIENT] send callback err=" << static_cast<int>(err3.code())
+                          << std::endl;
             });
         }
     });
@@ -48,15 +49,13 @@ int main() {
 
     std::thread io_thread([&]() { io->run(); });
 
-    while (!recv_done)
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    while (!recv_done) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
     io->stop();
     io_thread.join();
 
     std::cout << "[UDP Client] Final Received: ";
-    for (auto c : recv_data)
-        std::cout << c;
+    for (auto c : recv_data) std::cout << c;
     std::cout << std::endl;
 
     return 0;
