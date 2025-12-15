@@ -33,6 +33,8 @@ target_include_directories(asio INTERFACE
 
 target_compile_definitions(asio INTERFACE ASIO_STANDALONE)
 
+# Ensure threading support
+find_package(Threads REQUIRED)
 # -----------------------------------------
 # Main library
 # -----------------------------------------
