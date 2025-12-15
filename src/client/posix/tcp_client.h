@@ -27,7 +27,7 @@ class TcpClientPosix : public ClientInterface {
                      std::function<void(Error)> callback) override;
 
     Error recieve_sync(std::vector<uint8_t>& out) override;
-    Error recieve_async(std::function<void(const std::vector<uint8_t>&, Error)> callback) override;
+    Error recieve_async(ReceiveCallback callback) override;
 
     Error disconnect() override;
 

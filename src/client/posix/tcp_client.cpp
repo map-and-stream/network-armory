@@ -11,7 +11,7 @@ TcpClientPosix::TcpClientPosix(const NetworkConfig& cfg)
       serverPort(cfg.port),
       sock(-1),
       running(false),
-      reconnectDelayMs(cfg.auto_connect.retryTime_ms),
+      reconnectDelayMs(cfg.auto_connect.retry_time_ms),
       delimiter() {}
 
 Error TcpClientPosix::connect() {
