@@ -30,6 +30,15 @@ add_executable(tcp_client_posix
 )
 target_link_libraries(tcp_client_posix PRIVATE ${LIB_ALIAS})
 
+
+# ---------- HTTP SERVER (ASIO) ----------
+add_executable(http_server_boost
+    server/http/main.cpp
+)
+find_package(Boost REQUIRED)
+
+target_link_libraries(http_server_boost PRIVATE ${LIB_ALIAS}     Boost::headers )
+
 # ============================================
 # Include Path (CRITICAL FIX)
 # ============================================
@@ -40,4 +49,5 @@ target_link_libraries(tcp_client_posix PRIVATE ${LIB_ALIAS})
 # all resolve correctly.
 target_include_directories(network_armory PUBLIC
     ${CMAKE_SOURCE_DIR}/src
+    ${Boost_INCLUDE_DIRS}
 )
