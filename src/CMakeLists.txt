@@ -1,4 +1,5 @@
 set(LIBRARY_NAME network_armory)
+set(LIB_ALIAS network_armory::network_armory)
 
 # -----------------------------------------
 # Collect headers and sources
@@ -35,6 +36,27 @@ target_include_directories(asio INTERFACE
 
 target_compile_definitions(asio INTERFACE ASIO_STANDALONE)
 
+
+# -----------------------------------------
+# Add OpenSSL as a submodule/subdirectory
+# -----------------------------------------
+# Expect the OpenSSL source (or a cmake-enabled wrapper) at third-party/openssl
+# Two common approaches:
+# 1) If OpenSSL repo provides CMake build (e.g., modern openssl with CMake), use add_subdirectory.
+# 2) If it doesn't, use an intermediate CMake wrapper or use ExternalProject. Here we assume add_subdirectory works.
+
+set(OPENSSL_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/openssl)
+
+if(EXISTS "${OPENSSL_SRC_DIR}/CMakeLists.txt")
+    # Add OpenSSL project as subdirectory so it defines OpenSSL::SSL and OpenSSL::Crypto
+    add_subdirectory(${OPENSSL_SRC_DIR} ${CMAKE_BINARY_DIR}/third-party/openssl-build EXCLUDE_FROM_ALL)
+    set(HAS_SUBMOD_OPENSSL TRUE)
+else()
+    message(WARNING "OpenSSL submodule not found at ${OPENSSL_SRC_DIR}; falling back to find_package(OpenSSL)")
+    find_package(OpenSSL REQUIRED)
+    set(HAS_SUBMOD_OPENSSL FALSE)
+endif()
+
 # -----------------------------------------
 # Main library
 # -----------------------------------------
@@ -69,3 +91,5 @@ target_sources(${LIBRARY_NAME} PRIVATE ${NETWORK_HEADERS})
 # Alias for convenience
 # -----------------------------------------
 add_library(${LIB_ALIAS} ALIAS ${LIBRARY_NAME})
+add_library(network_armory::network_armory ALIAS ${LIBRARY_NAME})
+add_library(isiran::network_armory ALIAS ${LIBRARY_NAME})

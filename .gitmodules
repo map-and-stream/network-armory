@@ -2,3 +2,6 @@
 [submodule "src/third-party/asio"]
 	path = src/third-party/asio
 	url = https://github.com/chriskohlhoff/asio.git
+[submodule "src/third_party/openssl"]
+	path = src/third_party/openssl
+	url = https://github.com/openssl/openssl.git
