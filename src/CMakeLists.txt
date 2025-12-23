@@ -82,6 +82,16 @@ target_link_libraries(${LIBRARY_NAME} PUBLIC
     Threads::Threads
 )
 
+
+# -----------------------------------------
+# Link openssl 
+# -----------------------------------------
+find_package(OpenSSL REQUIRED)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+
+
+
 # -----------------------------------------
 # Keep headers visible to IDEs
 # -----------------------------------------
