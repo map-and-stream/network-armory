@@ -9,6 +9,83 @@ namespace http = beast::http;
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
+//------------------ general purpose
+enum class HttpMethod {
+    Get, Post, Put, Patch, Delete, Options, Head
+};
+
+struct HttpRequest {
+    HttpMethod method;
+    std::string path;
+    std::unordered_map<std::string, std::string> query;
+    std::unordered_map<std::string, std::string> headers;
+    std::string body;
+};
+
+struct HttpResponse {
+    int status = 200;
+    std::unordered_map<std::string, std::string> headers;
+    std::string body;
+};
+
+using HttpHandler = std::function<HttpResponse(const HttpRequest&)>;
+
+//------------------- internal router for boost
+class HttpRouter {
+    public:
+        void addRoute(HttpMethod method,
+                      std::string path,
+                      HttpHandler handler)
+        {
+            routes_[{method, std::move(path)}] = std::move(handler);
+        }
+    
+        HttpResponse route(const HttpRequest& request) const {
+            auto it = routes_.find({request.method, request.path});
+            if (it == routes_.end()) {
+                return {404, {}, "Not Found"};
+            }
+            return it->second(request);
+        }
+    
+    private:
+        struct Key {
+            HttpMethod method;
+            std::string path;
+    
+            bool operator==(const Key& other) const {
+                return method == other.method && path == other.path;
+            }
+        };
+    
+        struct KeyHash {
+            size_t operator()(const Key& k) const {
+                return std::hash<int>()(int(k.method)) ^
+                       std::hash<std::string>()(k.path);
+            }
+        };
+    
+        std::unordered_map<Key, HttpHandler, KeyHash> routes_;
+};
+
+
+HttpResponse echoHandler(const HttpRequest& req)
+{
+    return HttpResponse{
+        200,
+        {{"Content-Type", "text/plain"}},
+        req.body
+    };
+}
+
+/*
+router.addRoute(
+    HttpMethod::Post,
+    "/echo",
+    echoHandler
+);
+*/
+    
 int main() {
     try {
         asio::io_context ioc{1};
