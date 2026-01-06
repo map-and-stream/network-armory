@@ -32,7 +32,7 @@ find_package(Threads REQUIRED)
 
 # Add Asio include directory
 target_include_directories(asio INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/third-party/asio/asio/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third-party/asio/include
 )
 
 target_compile_definitions(asio INTERFACE ASIO_STANDALONE)
