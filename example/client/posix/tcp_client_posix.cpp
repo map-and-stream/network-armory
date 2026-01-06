@@ -10,8 +10,8 @@
 // Synchronous TCP client example
 void tcp_client_sync() {
     NetworkConfig cfg;
-    cfg.ip = "127.0.0.1";
-    cfg.port = 8083;
+    cfg.ip = "192.168.10.127";
+    cfg.port = 5000;
     TcpClientPosix client(cfg);
 
     Error err = client.connect();
@@ -58,8 +58,8 @@ void data_receive_callback(const std::vector<uint8_t>& data, Error err) {
 // Asynchronous TCP client example with interactive input
 void tcp_async_callback() {
     NetworkConfig cfg;
-    cfg.ip = "127.0.0.1";
-    cfg.port = 8083;
+    cfg.ip = "192.168.10.127";
+    cfg.port = 5000;
     TcpClientPosix client(cfg);
 
     Error err = client.connect_async(operation_callback);
